@@ -10,33 +10,37 @@ on:
   workflow_dispatch:
 jobs:
   build:
-    needs: [build-win,build-linux]
-    runs-on: windows-latest
+    needs: [build-win, build-linux]
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4.1.7
+      - uses: actions/download-artifact@v4.1.8
+      - name: Calculate Release Version
+        id: calculate_version
+        run: |
+          echo "RELEASE_VERSION=$((GITHUB_RUN_NUMBER + 150))" >> $GITHUB_ENV
       - name: Rename Tool
         run: |
           cd TIK-win
-          move ./TIK-win.zip ../TIK-5-${{ github.run_number }}-win.zip
+          mv ./TIK-win.zip ../TIK-5-${{ env.RELEASE_VERSION }}-win.zip
           cd ..
           cd TIK-linux
           ls
-          move ./TIK-linux.zip ../TIK-5-${{ github.run_number }}-linux.zip
+          mv ./TIK-linux.zip ../TIK-5-${{ env.RELEASE_VERSION }}-linux.zip
           cd ..
       - name: Upload release
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@v1.14.0
         with:
           allowUpdates: true
           omitBodyDuringUpdate: true
           removeArtifacts: true
-          name: "TIK-5.${{ github.run_number }}"
-          tag: "CI_BUILD_${{ github.run_number }}"
+          name: "TIK-5.${{ env.RELEASE_VERSION }}"
+          tag: "CI_BUILD_${{ env.RELEASE_VERSION }}"
           body: |
-            Build times: ${{ github.run_number }}
+            Build times: ${{ env.RELEASE_VERSION }}
             Version: 5
-            Note:If u cannot run it in linux,you may need do "chmod a+x ./*"
-            Minimum support: Ubuntu 20.04 (64bit),Windows Vista (32bit)
+            Note: When running in linux, you may need do `chmod a+x ./*`
+            Minimum support: Ubuntu 22.04 (64bit); Windows 11 (64bit)
 
             Русский: https://github.com/randcatcraps/TIK/releases
           artifacts: "*.zip"
@@ -44,46 +48,46 @@ jobs:
   build-win:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.7
       - name: Set up Python 3.8.10
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5.1.1
         with:
           # Semantic version range syntax or exact version of a Python version
-          python-version: '3.8.10'
+          python-version: "3.8.10"
           # Optional - x64 or x86 architecture, defaults to x64
-          architecture: 'x86'
+          architecture: "x64"
       # You can test your matrix by printing the current Python version
       - name: Update pip
-        run:  python -m pip install -U --force-reinstall pip
+        run: python -m pip install -U --force-reinstall pip
       - name: Build tool
         run: |
-             python build.py
+          python build.py
       - name: Upload Win Build
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.3.5
         with:
           name: TIK-win
-          path: './TIK-win.zip'
+          path: "./TIK-win.zip"
   build-linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.7
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5.1.1
         with:
           # Semantic version range syntax or exact version of a Python version
-          python-version: '3.10'
+          python-version: "3.11"
           # Optional - x64 or x86 architecture, defaults to x64
       - name: Install Packages
         run: |
-            python3 -m pip install -U --force-reinstall pip
-            sudo apt update -y && sudo apt install python3-tk -y
+          python3 -m pip install -U --force-reinstall pip
+          sudo apt update -y && sudo apt install python3-tk -y
       - name: Build Tool
         run: |
-             python3 build.py
+          python3 build.py
       - name: Upload Linux Build
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.3.5
         with:
           name: TIK-linux
-          path: './TIK-linux.zip'
+          path: "./TIK-linux.zip"
