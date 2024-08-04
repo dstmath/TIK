@@ -1,3 +1,5 @@
+[![GitHub release](https://img.shields.io/github/release/qlenlen/TIK)](https://GitHub.com/qlenlen/TIK/releases/) 
+
 ##  TIK
 ####  **介绍** 
 ***
