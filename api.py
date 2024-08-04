@@ -4,10 +4,10 @@ import shutil
 
 
 def cls():
-    if os.name == 'nt':
-        os.system('cls')
-    elif os.name == 'posix':
-        os.system('clear')
+    if os.name == "nt":
+        os.system("cls")
+    elif os.name == "posix":
+        os.system("clear")
     else:
         print("Ctrl + L to clear the window")
 
@@ -20,7 +20,7 @@ def dir_has(path, endswith):
 
 
 def cat(file):
-    with open(file, 'r') as f:
+    with open(file, "r") as f:
         return f.read().strip()
 
 
@@ -51,8 +51,13 @@ class dirsize(object):
         self.dname = os.path.basename(dir)
         self.size = 0
         for root, dirs, files in os.walk(dir):
-            self.size += sum([os.path.getsize(os.path.join(root, name)) for name in files if
-                              not os.path.islink(os.path.join(root, name))])
+            self.size += sum(
+                [
+                    os.path.getsize(os.path.join(root, name))
+                    for name in files
+                    if not os.path.islink(os.path.join(root, name))
+                ]
+            )
         if self.get == 1:
             self.rsize_v = self.size
         elif self.get in [2, 3]:
@@ -87,16 +92,27 @@ class dirsize(object):
     def rsizelist(dname, size, file):
         if os.access(file, os.F_OK):
             print("调整%s大小为%s" % (dname, size))
-            with open(file, 'r', encoding='utf-8') as f:
+            with open(file, "r", encoding="utf-8") as f:
                 content = f.read()
-            with open(file, 'w', encoding='utf-8', newline='\n') as ff:
-                content = re.sub("resize {} \\d+".format(dname),
-                                 "resize {} {}".format(dname, size), content)
-                content = re.sub("resize {}_a \\d+".format(dname),
-                                 "resize {}_a {}".format(dname, size), content)
-                content = re.sub("# Grow partition {} from 0 to \\d+".format(dname),
-                                 "# Grow partition {} from 0 to {}".format(dname, size),
-                                 content)
-                content = re.sub("# Grow partition {}_a from 0 to \\d+".format(dname),
-                                 "# Grow partition {}_a from 0 to {}".format(dname, size), content)
+            with open(file, "w", encoding="utf-8", newline="\n") as ff:
+                content = re.sub(
+                    "resize {} \\d+".format(dname),
+                    "resize {} {}".format(dname, size),
+                    content,
+                )
+                content = re.sub(
+                    "resize {}_a \\d+".format(dname),
+                    "resize {}_a {}".format(dname, size),
+                    content,
+                )
+                content = re.sub(
+                    "# Grow partition {} from 0 to \\d+".format(dname),
+                    "# Grow partition {} from 0 to {}".format(dname, size),
+                    content,
+                )
+                content = re.sub(
+                    "# Grow partition {}_a from 0 to \\d+".format(dname),
+                    "# Grow partition {}_a from 0 to {}".format(dname, size),
+                    content,
+                )
                 ff.write(content)

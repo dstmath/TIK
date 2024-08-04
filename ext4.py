@@ -15,25 +15,25 @@ def wcs_cmp(str_a, str_b):
     return -1 if tmp < 0 else 1 if tmp > 0 else 0
 
 
-class Ext4Error(Exception):
-    ...
+class Ext4Error(Exception): ...
 
 
-class EndOfStreamError(Ext4Error):
-    ...
+class EndOfStreamError(Ext4Error): ...
 
 
-class MagicError(Ext4Error):
-    ...
+class MagicError(Ext4Error): ...
 
 
 # ----------------------------- LOW LEVEL ------------------------------
+
 
 class ext4_struct(ctypes.LittleEndianStructure):
     def __getattr__(self, name):
         try:
             # Combining *_lo and *_hi fields
-            lo_field = ctypes.LittleEndianStructure.__getattribute__(type(self), name + "_lo")
+            lo_field = ctypes.LittleEndianStructure.__getattribute__(
+                type(self), name + "_lo"
+            )
             size = lo_field.size
 
             lo = lo_field.__get__(self)
@@ -46,11 +46,15 @@ class ext4_struct(ctypes.LittleEndianStructure):
     def __setattr__(self, name, value):
         try:
             # Combining *_lo and *_hi fields
-            lo_field = ctypes.LittleEndianStructure.__getattribute__(type(self), name + "_lo")
+            lo_field = ctypes.LittleEndianStructure.__getattribute__(
+                type(self), name + "_lo"
+            )
             size = lo_field.size
 
             lo_field.__set__(self, value & ((1 << (8 * size)) - 1))
-            ctypes.LittleEndianStructure.__setattr__(self, name + "_hi", value >> (8 * size))
+            ctypes.LittleEndianStructure.__setattr__(
+                self, name + "_hi", value >> (8 * size)
+            )
         except AttributeError:
             ctypes.LittleEndianStructure.__setattr__(self, name, value)
 
@@ -60,14 +64,14 @@ class ext4_dir_entry_2(ext4_struct):
         ("inode", ctypes.c_uint),  # 0x0
         ("rec_len", ctypes.c_ushort),  # 0x4
         ("name_len", ctypes.c_ubyte),  # 0x6
-        ("file_type", ctypes.c_ubyte)  # 0x7
+        ("file_type", ctypes.c_ubyte),  # 0x7
         # Variable length field "name" missing at 0x8
     ]
 
     @staticmethod
     def _from_buffer_copy(raw, offset=0, platform64=True):
         struct = ext4_dir_entry_2.from_buffer_copy(raw, offset)
-        struct.name = raw[offset + 0x8: offset + 0x8 + struct.name_len]
+        struct.name = raw[offset + 0x8 : offset + 0x8 + struct.name_len]
         return struct
 
 
@@ -76,7 +80,7 @@ class ext4_extent(ext4_struct):
         ("ee_block", ctypes.c_uint),  # 0x0000
         ("ee_len", ctypes.c_ushort),  # 0x0004
         ("ee_start_hi", ctypes.c_ushort),  # 0x0006
-        ("ee_start_lo", ctypes.c_uint)  # 0x0008
+        ("ee_start_lo", ctypes.c_uint),  # 0x0008
     ]
 
 
@@ -86,7 +90,7 @@ class ext4_extent_header(ext4_struct):
         ("eh_entries", ctypes.c_ushort),  # 0x0002
         ("eh_max", ctypes.c_ushort),  # 0x0004
         ("eh_depth", ctypes.c_ushort),  # 0x0006
-        ("eh_generation", ctypes.c_uint)  # 0x0008
+        ("eh_generation", ctypes.c_uint),  # 0x0008
     ]
 
 
@@ -95,7 +99,7 @@ class ext4_extent_idx(ext4_struct):
         ("ei_block", ctypes.c_uint),  # 0x0000
         ("ei_leaf_lo", ctypes.c_uint),  # 0x0004
         ("ei_leaf_hi", ctypes.c_ushort),  # 0x0008
-        ("ei_unused", ctypes.c_ushort)  # 0x000A
+        ("ei_unused", ctypes.c_ushort),  # 0x000A
     ]
 
 
@@ -113,7 +117,6 @@ class ext4_group_descriptor(ext4_struct):
         ("bg_inode_bitmap_csum_lo", ctypes.c_ushort),  # 0x001A
         ("bg_itable_unused_lo", ctypes.c_ushort),  # 0x001C
         ("bg_checksum", ctypes.c_ushort),  # 0x001E
-
         # 64-bit fields
         ("bg_block_bitmap_hi", ctypes.c_uint),  # 0x0020
         ("bg_inode_bitmap_hi", ctypes.c_uint),  # 0x0024
@@ -162,7 +165,9 @@ class ext4_inode(ext4_struct):
     S_IWUSR = 0x80  # Owner can write
     S_IRUSR = 0x100  # Owner can read
     S_ISVTX = 0x200  # Sticky bit (only owner can delete)
-    S_ISGID = 0x400  # Set GID (execute with privileges of group owner of the file's group)
+    S_ISGID = (
+        0x400  # Set GID (execute with privileges of group owner of the file's group)
+    )
     S_ISUID = 0x800  # Set UID (execute with privileges of the file's owner)
     S_IFIFO = 0x1000  # FIFO device (named pipe)
     S_IFCHR = 0x2000  # Character device (raw, unbuffered, aligned, direct access to hardware storage)
@@ -196,12 +201,30 @@ class ext4_inode(ext4_struct):
         ("i_file_acl_lo", ctypes.c_uint),  # 0x0068
         ("i_size_hi", ctypes.c_uint),  # 0x006C, Originally named i_size_high
         ("i_obso_faddr", ctypes.c_uint),  # 0x0070
-        ("i_osd2_blocks_high", ctypes.c_ushort),  # 0x0074, Originally named i_osd2.linux2.l_i_blocks_high
-        ("i_file_acl_hi", ctypes.c_ushort),  # 0x0076, Originally named i_osd2.linux2.l_i_file_acl_high
-        ("i_uid_hi", ctypes.c_ushort),  # 0x0078, Originally named i_osd2.linux2.l_i_uid_high
-        ("i_gid_hi", ctypes.c_ushort),  # 0x007A, Originally named i_osd2.linux2.l_i_gid_high
-        ("i_osd2_checksum_lo", ctypes.c_ushort),  # 0x007C, Originally named i_osd2.linux2.l_i_checksum_lo
-        ("i_osd2_reserved", ctypes.c_ushort),  # 0x007E, Originally named i_osd2.linux2.l_i_reserved
+        (
+            "i_osd2_blocks_high",
+            ctypes.c_ushort,
+        ),  # 0x0074, Originally named i_osd2.linux2.l_i_blocks_high
+        (
+            "i_file_acl_hi",
+            ctypes.c_ushort,
+        ),  # 0x0076, Originally named i_osd2.linux2.l_i_file_acl_high
+        (
+            "i_uid_hi",
+            ctypes.c_ushort,
+        ),  # 0x0078, Originally named i_osd2.linux2.l_i_uid_high
+        (
+            "i_gid_hi",
+            ctypes.c_ushort,
+        ),  # 0x007A, Originally named i_osd2.linux2.l_i_gid_high
+        (
+            "i_osd2_checksum_lo",
+            ctypes.c_ushort,
+        ),  # 0x007C, Originally named i_osd2.linux2.l_i_checksum_lo
+        (
+            "i_osd2_reserved",
+            ctypes.c_ushort,
+        ),  # 0x007E, Originally named i_osd2.linux2.l_i_reserved
         ("i_extra_isize", ctypes.c_ushort),  # 0x0080
         ("i_checksum_hi", ctypes.c_ushort),  # 0x0082
         ("i_ctime_extra", ctypes.c_uint),  # 0x0084
@@ -222,7 +245,9 @@ class ext4_superblock(ext4_struct):
     INCOMPAT_64BIT = 0x80  # Uses 64-bit features (e.g. *_hi structure fields in ext4_group_descriptor)
     INCOMPAT_32BIT = 0x66
 
-    INCOMPAT_FILETYPE = 0x2  # Directory entries record file type (instead of inode flags)
+    INCOMPAT_FILETYPE = (
+        0x2  # Directory entries record file type (instead of inode flags)
+    )
     _fields_ = [
         ("s_inodes_count", ctypes.c_uint),  # 0x0000
         ("s_blocks_count_lo", ctypes.c_uint),  # 0x0004
@@ -274,7 +299,6 @@ class ext4_superblock(ext4_struct):
         ("s_first_meta_bg", ctypes.c_uint),  # 0x0104
         ("s_mkfs_time", ctypes.c_uint),  # 0x0108
         ("s_jnl_blocks", ctypes.c_uint * 17),  # 0x010C
-
         # 64-bit fields
         ("s_blocks_count_hi", ctypes.c_uint),  # 0x0150
         ("s_r_blocks_count_hi", ctypes.c_uint),  # 0x0154
@@ -316,7 +340,7 @@ class ext4_superblock(ext4_struct):
         ("s_prj_quota_inum", ctypes.c_uint),  # 0x026C
         ("s_checksum_seed", ctypes.c_uint),  # 0x0270
         ("s_reserved", ctypes.c_uint * 98),  # 0x0274
-        ("s_checksum", ctypes.c_uint)  # 0x03FC
+        ("s_checksum", ctypes.c_uint),  # 0x03FC
     ]
 
     @staticmethod
@@ -383,18 +407,21 @@ class ext4_xattr_entry(ext4_struct):
         ("e_value_offs", ctypes.c_ushort),  # 0x02
         ("e_value_inum", ctypes.c_uint),  # 0x04
         ("e_value_size", ctypes.c_uint),  # 0x08
-        ("e_hash", ctypes.c_uint)  # 0x0C
+        ("e_hash", ctypes.c_uint),  # 0x0C
         # Variable length field "e_name" missing at 0x10
     ]
 
     @staticmethod
     def _from_buffer_copy(raw, offset=0, platform64=True):
         struct = ext4_xattr_entry.from_buffer_copy(raw, offset)
-        struct.e_name = raw[offset + 0x10: offset + 0x10 + struct.e_name_len]
+        struct.e_name = raw[offset + 0x10 : offset + 0x10 + struct.e_name_len]
         return struct
 
     @property
-    def _size(self): return 4 * ((ctypes.sizeof(type(self)) + self.e_name_len + 3) // 4)  # 4-byte alignment
+    def _size(self):
+        return 4 * (
+            (ctypes.sizeof(type(self)) + self.e_name_len + 3) // 4
+        )  # 4-byte alignment
 
 
 class ext4_xattr_header(ext4_struct):
@@ -409,9 +436,7 @@ class ext4_xattr_header(ext4_struct):
 
 
 class ext4_xattr_ibody_header(ext4_struct):
-    _fields_ = [
-        ("h_magic", ctypes.c_uint)  # 0x0, Must be 0xEA020000
-    ]
+    _fields_ = [("h_magic", ctypes.c_uint)]  # 0x0, Must be 0xEA020000
 
 
 class InodeType:
@@ -423,10 +448,13 @@ class InodeType:
     FIFO = 0x5  # FIFO
     SOCKET = 0x6  # Socket
     SYMBOLIC_LINK = 0x7  # Symbolic link
-    CHECKSUM = 0xDE  # Checksum entry; not really a file type, but a type of directory entry
+    CHECKSUM = (
+        0xDE  # Checksum entry; not really a file type, but a type of directory entry
+    )
 
 
 # ----------------------------- HIGH LEVEL ------------------------------
+
 
 class MappingEntry:
     def __init__(self, file_block_idx, disk_block_idx, block_count=1):
@@ -462,9 +490,13 @@ class MappingEntry:
 
         idx = 0
         while idx < len(entries):
-            while idx + 1 < len(entries) \
-                    and entries[idx].file_block_idx + entries[idx].block_count == entries[idx + 1].file_block_idx \
-                    and entries[idx].disk_block_idx + entries[idx].block_count == entries[idx + 1].disk_block_idx:
+            while (
+                idx + 1 < len(entries)
+                and entries[idx].file_block_idx + entries[idx].block_count
+                == entries[idx + 1].file_block_idx
+                and entries[idx].disk_block_idx + entries[idx].block_count
+                == entries[idx + 1].disk_block_idx
+            ):
                 tmp = entries.pop(idx + 1)
                 entries[idx].block_count += tmp.block_count
 
@@ -483,18 +515,30 @@ class Volume:
 
         # Superblock
         self.superblock = self.read_struct(ext4_superblock, 0x400)
-        self.platform64 = (self.superblock.s_feature_incompat & ext4_superblock.INCOMPAT_64BIT) != 0
+        self.platform64 = (
+            self.superblock.s_feature_incompat & ext4_superblock.INCOMPAT_64BIT
+        ) != 0
 
         if not ignore_magic and self.superblock.s_magic != 0xEF53:
-            raise MagicError(f"Invalid magic value in superblock: 0x{self.superblock.s_magic:04X} (expected 0xEF53)")
+            raise MagicError(
+                f"Invalid magic value in superblock: 0x{self.superblock.s_magic:04X} (expected 0xEF53)"
+            )
 
         # Group descriptors
-        self.group_descriptors = [None] * (self.superblock.s_inodes_count // self.superblock.s_inodes_per_group)
+        self.group_descriptors = [None] * (
+            self.superblock.s_inodes_count // self.superblock.s_inodes_per_group
+        )
 
-        group_desc_table_offset = (0x400 // self.block_size + 1) * self.block_size  # First block after superblock
+        group_desc_table_offset = (
+            0x400 // self.block_size + 1
+        ) * self.block_size  # First block after superblock
         for group_desc_idx in range(len(self.group_descriptors)):
-            group_desc_offset = group_desc_table_offset + group_desc_idx * self.superblock.s_desc_size
-            self.group_descriptors[group_desc_idx] = self.read_struct(ext4_group_descriptor, group_desc_offset)
+            group_desc_offset = (
+                group_desc_table_offset + group_desc_idx * self.superblock.s_desc_size
+            )
+            self.group_descriptors[group_desc_idx] = self.read_struct(
+                ext4_group_descriptor, group_desc_offset
+            )
 
     def __repr__(self):
         return f"{type(self).__name__:s}(volume_name = {self.superblock.s_volume_name!r:s}, uuid = {self.uuid!r:s}, last_mounted = {self.superblock.s_last_mounted!r:s})"
@@ -514,31 +558,35 @@ class Volume:
     @property
     def get_info_list(self):
         data = [
-            ['Filesystem magic number', hex(self.superblock.s_magic).upper()],
+            ["Filesystem magic number", hex(self.superblock.s_magic).upper()],
             ["Filesystem volume name", self.superblock.s_volume_name.decode()],
             ["Filesystem UUID", self.uuid],
-            ['Last mounted on', self.superblock.s_last_mounted.decode()],
+            ["Last mounted on", self.superblock.s_last_mounted.decode()],
             ["Block size", f"{1 << (10 + self.superblock.s_log_block_size)}"],
             ["Block count", self.superblock.s_blocks_count],
             ["Free inodes", self.superblock.s_free_inodes_count],
             ["Free blocks", self.superblock.s_free_blocks_count],
             ["Inodes per group", self.superblock.s_inodes_per_group],
-            ['Blocks per group', self.superblock.s_blocks_per_group],
-            ['Inode count', self.superblock.s_inodes_count],
-            ['Reserved GDT blocks', self.superblock.s_reserved_gdt_blocks],
+            ["Blocks per group", self.superblock.s_blocks_per_group],
+            ["Inode count", self.superblock.s_inodes_count],
+            ["Reserved GDT blocks", self.superblock.s_reserved_gdt_blocks],
             ["Inode size", self.superblock.s_inode_size],
-            ['Filesystem created', self.superblock.s_mkfs_time],
-            ["Currect Size", self.get_block_count * self.block_size]
+            ["Filesystem created", self.superblock.s_mkfs_time],
+            ["Currect Size", self.get_block_count * self.block_size],
         ]
         return data
 
     def get_inode(self, inode_idx, file_type=InodeType.UNKNOWN):
         group_idx, inode_table_entry_idx = self.get_inode_group(inode_idx)
         try:
-            inode_table_offset = self.group_descriptors[group_idx].bg_inode_table * self.block_size
+            inode_table_offset = (
+                self.group_descriptors[group_idx].bg_inode_table * self.block_size
+            )
         except Exception:
             inode_table_offset = 99 * self.block_size
-        inode_offset = inode_table_offset + inode_table_entry_idx * self.superblock.s_inode_size
+        inode_offset = (
+            inode_table_offset + inode_table_entry_idx * self.superblock.s_inode_size
+        )
 
         return Inode(self, inode_offset, inode_idx, file_type)
 
@@ -557,7 +605,9 @@ class Volume:
         raw = self.read(offset, ctypes.sizeof(structure))
 
         if hasattr(structure, "_from_buffer_copy"):
-            return structure._from_buffer_copy(raw, platform64=platform64 if platform64 else self.platform64)
+            return structure._from_buffer_copy(
+                raw, platform64=platform64 if platform64 else self.platform64
+            )
         else:
             return structure.from_buffer_copy(raw)
 
@@ -568,7 +618,7 @@ class Volume:
     @property
     def uuid(self):
         uuid = self.superblock.s_uuid
-        uuid = [uuid[:4], uuid[4: 6], uuid[6: 8], uuid[8: 10], uuid[10:]]
+        uuid = [uuid[:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:]]
         return "-".join("".join("{0:02X}".format(c) for c in part) for part in uuid)
 
 
@@ -599,39 +649,59 @@ class Inode:
             4: "trusted.",
             6: "security.",
             7: "system.",
-            8: "system.richacl"
+            8: "system.richacl",
         }
         prefixes.update(prefixes)
 
         # Iterator over ext4_xattr_entry structures
         i = 0
         while i < len(raw_data):
-            xattr_entry = ext4_xattr_entry._from_buffer_copy(raw_data, i, platform64=self.volume.platform64)
+            xattr_entry = ext4_xattr_entry._from_buffer_copy(
+                raw_data, i, platform64=self.volume.platform64
+            )
 
             if not (
-                    xattr_entry.e_name_len | xattr_entry.e_name_index | xattr_entry.e_value_offs | xattr_entry.e_value_inum):
+                xattr_entry.e_name_len
+                | xattr_entry.e_name_index
+                | xattr_entry.e_value_offs
+                | xattr_entry.e_value_inum
+            ):
                 # End of ext4_xattr_entry list
                 break
 
             if xattr_entry.e_name_index not in prefixes:
-                raise Ext4Error(f"Unknown attribute prefix {xattr_entry.e_name_index:d} in inode {self.inode_idx:d}")
+                raise Ext4Error(
+                    f"Unknown attribute prefix {xattr_entry.e_name_index:d} in inode {self.inode_idx:d}"
+                )
 
-            xattr_name = prefixes[xattr_entry.e_name_index] + xattr_entry.e_name.decode("iso-8859-2")
+            xattr_name = prefixes[xattr_entry.e_name_index] + xattr_entry.e_name.decode(
+                "iso-8859-2"
+            )
 
             if xattr_entry.e_value_inum != 0:
                 # external xattr
-                xattr_inode = self.volume.get_inode(xattr_entry.e_value_inum, InodeType.FILE)
+                xattr_inode = self.volume.get_inode(
+                    xattr_entry.e_value_inum, InodeType.FILE
+                )
 
-                if not self.volume.ignore_flags and (xattr_inode.inode.i_flags & ext4_inode.EXT4_EA_INODE_FL) != 0:
+                if (
+                    not self.volume.ignore_flags
+                    and (xattr_inode.inode.i_flags & ext4_inode.EXT4_EA_INODE_FL) != 0
+                ):
                     raise Ext4Error(
-                        f"Inode {xattr_inode.inode_idx:d} associated with the extended attribute {xattr_name!r:s} of inode {self.inode_idx:d} is not marked as large extended attribute value.")
+                        f"Inode {xattr_inode.inode_idx:d} associated with the extended attribute {xattr_name!r:s} of inode {self.inode_idx:d} is not marked as large extended attribute value."
+                    )
 
                 # TODO Use xattr_entry.e_value_size or xattr_inode.inode.i_size?
                 xattr_value = xattr_inode.open_read().read()
             else:
                 # internal xattr
                 xattr_value = raw_data[
-                              xattr_entry.e_value_offs + offset: xattr_entry.e_value_offs + offset + xattr_entry.e_value_size]
+                    xattr_entry.e_value_offs
+                    + offset : xattr_entry.e_value_offs
+                    + offset
+                    + xattr_entry.e_value_size
+                ]
 
             yield xattr_name, xattr_value
 
@@ -642,7 +712,10 @@ class Inode:
         file_name_a, _, file_type_a = dir_a
         file_name_b, _, file_type_b = dir_b
 
-        if file_type_a == InodeType.DIRECTORY == file_type_b or file_type_a != InodeType.DIRECTORY != file_type_b:
+        if (
+            file_type_a == InodeType.DIRECTORY == file_type_b
+            or file_type_a != InodeType.DIRECTORY != file_type_b
+        ):
             tmp = wcs_cmp(file_name_a.lower(), file_name_b.lower())
             return tmp if tmp != 0 else wcs_cmp(file_name_a, file_name_b)
         else:
@@ -659,16 +732,22 @@ class Inode:
         for i, part in enumerate(relative_path):
             if not self.volume.ignore_flags and not current_inode.is_dir:
                 current_path = "/".join(relative_path[:i])
-                raise Ext4Error(f"{current_path!r:s} (Inode {inode_idx:d}) is not a directory."
-                                )
+                raise Ext4Error(
+                    f"{current_path!r:s} (Inode {inode_idx:d}) is not a directory."
+                )
 
             file_name, inode_idx, file_type = next(
-                filter(lambda entry: entry[0] == part, current_inode.open_dir(decode_name)), (None, None, None))
+                filter(
+                    lambda entry: entry[0] == part, current_inode.open_dir(decode_name)
+                ),
+                (None, None, None),
+            )
 
             if inode_idx is None:
                 current_path = "/".join(relative_path[:i])
                 raise FileNotFoundError(
-                    f"{part!r:s} not found in {current_path!r:s} (Inode {current_inode.inode_idx:d}).")
+                    f"{part!r:s} not found in {current_path!r:s} (Inode {current_inode.inode_idx:d})."
+                )
 
             current_inode = current_inode.volume.get_inode(inode_idx, file_type)
 
@@ -676,21 +755,30 @@ class Inode:
 
     @property
     def is_dir(self):
-        if (self.volume.superblock.s_feature_incompat & ext4_superblock.INCOMPAT_FILETYPE) == 0:
+        if (
+            self.volume.superblock.s_feature_incompat
+            & ext4_superblock.INCOMPAT_FILETYPE
+        ) == 0:
             return (self.inode.i_mode & ext4_inode.S_IFDIR) != 0
         else:
             return self.file_type == InodeType.DIRECTORY
 
     @property
     def is_file(self):
-        if (self.volume.superblock.s_feature_incompat & ext4_superblock.INCOMPAT_FILETYPE) == 0:
+        if (
+            self.volume.superblock.s_feature_incompat
+            & ext4_superblock.INCOMPAT_FILETYPE
+        ) == 0:
             return (self.inode.i_mode & ext4_inode.S_IFREG) != 0
         else:
             return self.file_type == InodeType.FILE
 
     @property
     def is_symlink(self):
-        if (self.volume.superblock.s_feature_incompat & ext4_superblock.INCOMPAT_FILETYPE) == 0:
+        if (
+            self.volume.superblock.s_feature_incompat
+            & ext4_superblock.INCOMPAT_FILETYPE
+        ) == 0:
             return (self.inode.i_mode & ext4_inode.S_IFLNK) != 0
         else:
             return self.file_type == InodeType.SYMBOLIC_LINK
@@ -699,8 +787,13 @@ class Inode:
     def is_in_use(self):
         group_idx, bitmap_bit = self.volume.get_inode_group(self.inode_idx)
 
-        inode_usage_bitmap_offset = self.volume.group_descriptors[group_idx].bg_inode_bitmap * self.volume.block_size
-        inode_usage_byte = self.volume.read(inode_usage_bitmap_offset + bitmap_bit // 8, 1)[0]
+        inode_usage_bitmap_offset = (
+            self.volume.group_descriptors[group_idx].bg_inode_bitmap
+            * self.volume.block_size
+        )
+        inode_usage_byte = self.volume.read(
+            inode_usage_bitmap_offset + bitmap_bit // 8, 1
+        )[0]
 
         return ((inode_usage_byte >> (7 - bitmap_bit % 8)) & 1) != 0
 
@@ -710,11 +803,14 @@ class Inode:
             (False, False): "-",
             (False, True): letter.upper(),
             (True, False): "x",
-            (True, True): letter.lower()
+            (True, True): letter.lower(),
         }[(execute, special)]
 
         try:
-            if (self.volume.superblock.s_feature_incompat & ext4_superblock.INCOMPAT_FILETYPE) == 0:
+            if (
+                self.volume.superblock.s_feature_incompat
+                & ext4_superblock.INCOMPAT_FILETYPE
+            ) == 0:
                 device_type = {
                     ext4_inode.S_IFIFO: "p",
                     ext4_inode.S_IFCHR: "c",
@@ -732,29 +828,37 @@ class Inode:
                     InodeType.BLOCK_DEVICE: "b",
                     InodeType.FIFO: "p",
                     InodeType.SOCKET: "s",
-                    InodeType.SYMBOLIC_LINK: "l"
+                    InodeType.SYMBOLIC_LINK: "l",
                 }[self.file_type]
         except KeyError:
             device_type = "?"
 
-        return "".join([
-            device_type,
-
-            "r" if (self.inode.i_mode & ext4_inode.S_IRUSR) != 0 else "-",
-            "w" if (self.inode.i_mode & ext4_inode.S_IWUSR) != 0 else "-",
-            special_flag("s", (self.inode.i_mode & ext4_inode.S_IXUSR) != 0,
-                         (self.inode.i_mode & ext4_inode.S_ISUID) != 0),
-
-            "r" if (self.inode.i_mode & ext4_inode.S_IRGRP) != 0 else "-",
-            "w" if (self.inode.i_mode & ext4_inode.S_IWGRP) != 0 else "-",
-            special_flag("s", (self.inode.i_mode & ext4_inode.S_IXGRP) != 0,
-                         (self.inode.i_mode & ext4_inode.S_ISGID) != 0),
-
-            "r" if (self.inode.i_mode & ext4_inode.S_IROTH) != 0 else "-",
-            "w" if (self.inode.i_mode & ext4_inode.S_IWOTH) != 0 else "-",
-            special_flag("t", (self.inode.i_mode & ext4_inode.S_IXOTH) != 0,
-                         (self.inode.i_mode & ext4_inode.S_ISVTX) != 0),
-        ])
+        return "".join(
+            [
+                device_type,
+                "r" if (self.inode.i_mode & ext4_inode.S_IRUSR) != 0 else "-",
+                "w" if (self.inode.i_mode & ext4_inode.S_IWUSR) != 0 else "-",
+                special_flag(
+                    "s",
+                    (self.inode.i_mode & ext4_inode.S_IXUSR) != 0,
+                    (self.inode.i_mode & ext4_inode.S_ISUID) != 0,
+                ),
+                "r" if (self.inode.i_mode & ext4_inode.S_IRGRP) != 0 else "-",
+                "w" if (self.inode.i_mode & ext4_inode.S_IWGRP) != 0 else "-",
+                special_flag(
+                    "s",
+                    (self.inode.i_mode & ext4_inode.S_IXGRP) != 0,
+                    (self.inode.i_mode & ext4_inode.S_ISGID) != 0,
+                ),
+                "r" if (self.inode.i_mode & ext4_inode.S_IROTH) != 0 else "-",
+                "w" if (self.inode.i_mode & ext4_inode.S_IWOTH) != 0 else "-",
+                special_flag(
+                    "t",
+                    (self.inode.i_mode & ext4_inode.S_IXOTH) != 0,
+                    (self.inode.i_mode & ext4_inode.S_ISVTX) != 0,
+                ),
+            ]
+        )
 
     def open_dir(self, decode_name=None):
         # Parse args
@@ -773,7 +877,9 @@ class Inode:
         offset = 0
 
         while offset < len(raw_data):
-            dirent = ext4_dir_entry_2._from_buffer_copy(raw_data, offset, platform64=self.volume.platform64)
+            dirent = ext4_dir_entry_2._from_buffer_copy(
+                raw_data, offset, platform64=self.volume.platform64
+            )
 
             if dirent.file_type != InodeType.CHECKSUM:
                 yield decode_name(dirent.name), dirent.inode, dirent.file_type
@@ -795,40 +901,61 @@ class Inode:
                 if not self.volume.ignore_magic and header.eh_magic != 0xF30A:
                     raise MagicError(
                         f"Invalid magic value in extent header at offset 0x{self.inode_idx:X} of"
-                        f" inode {self.inode_idx:d}: 0x{header.eh_magic:04X} (expected 0xF30A)")
+                        f" inode {self.inode_idx:d}: 0x{header.eh_magic:04X} (expected 0xF30A)"
+                    )
 
                 if header.eh_depth != 0:
-                    indices = self.volume.read_struct(ext4_extent_idx * header.eh_entries,
-                                                      header_offset + ctypes.sizeof(ext4_extent_header))
+                    indices = self.volume.read_struct(
+                        ext4_extent_idx * header.eh_entries,
+                        header_offset + ctypes.sizeof(ext4_extent_header),
+                    )
                     for idx in indices:
                         nodes.put_nowait(idx.ei_leaf * self.volume.block_size)
                 else:
-                    extents = self.volume.read_struct(ext4_extent * header.eh_entries,
-                                                      header_offset + ctypes.sizeof(ext4_extent_header))
+                    extents = self.volume.read_struct(
+                        ext4_extent * header.eh_entries,
+                        header_offset + ctypes.sizeof(ext4_extent_header),
+                    )
                     for extent in extents:
-                        mapping.append(MappingEntry(extent.ee_block, extent.ee_start, extent.ee_len))
+                        mapping.append(
+                            MappingEntry(
+                                extent.ee_block, extent.ee_start, extent.ee_len
+                            )
+                        )
 
             MappingEntry.optimize(mapping)
             return BlockReader(self.volume, len(self), mapping)
         else:
             # Inode uses inline data
-            i_block = self.volume.read(self.offset + ext4_inode.i_block.offset, ext4_inode.i_block.size)
-            return io.BytesIO(i_block[:self.inode.i_size])
+            i_block = self.volume.read(
+                self.offset + ext4_inode.i_block.offset, ext4_inode.i_block.size
+            )
+            return io.BytesIO(i_block[: self.inode.i_size])
 
     @property
     def size_readable(self):
         if self.inode.i_size < 1024:
-            return "{0:d} bytes".format(self.inode.i_size) if self.inode.i_size != 1 else "1 byte"
+            return (
+                "{0:d} bytes".format(self.inode.i_size)
+                if self.inode.i_size != 1
+                else "1 byte"
+            )
         else:
             units = ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"]
             unit_idx = min(int(math.log(self.inode.i_size, 1024)), len(units))
 
-            return f"{self.inode.i_size / (1024 ** unit_idx):.2f} {units[unit_idx - 1]:s}"
+            return (
+                f"{self.inode.i_size / (1024 ** unit_idx):.2f} {units[unit_idx - 1]:s}"
+            )
 
     def xattrs(self, check_inline=True, check_block=True, force_inline=False):
         # Inline xattrs
-        inline_data_offset = self.offset + ext4_inode.EXT2_GOOD_OLD_INODE_SIZE + self.inode.i_extra_isize
-        inline_data_length = self.offset + self.volume.superblock.s_inode_size - inline_data_offset
+        inline_data_offset = (
+            self.offset + ext4_inode.EXT2_GOOD_OLD_INODE_SIZE + self.inode.i_extra_isize
+        )
+        inline_data_length = (
+            self.offset + self.volume.superblock.s_inode_size - inline_data_offset
+        )
 
         if check_inline and inline_data_length > ctypes.sizeof(ext4_xattr_ibody_header):
             inline_data = self.volume.read(inline_data_offset, inline_data_length)
@@ -837,11 +964,12 @@ class Inode:
             # TODO Find way to detect inline xattrs without checking the h_magic field to enable error detection with
             #  the h_magic field.
             if force_inline or xattrs_header.h_magic == 0xEA020000:
-                offset = 4 * ((ctypes.sizeof(
-                    ext4_xattr_ibody_header) + 3) // 4)
+                offset = 4 * ((ctypes.sizeof(ext4_xattr_ibody_header) + 3) // 4)
                 # The ext4_xattr_entry following the header is aligned on a 4-byte boundary
             try:
-                for xattr_name, xattr_value in self._parse_xattrs(inline_data[offset:], 0):
+                for xattr_name, xattr_value in self._parse_xattrs(
+                    inline_data[offset:], 0
+                ):
                     yield xattr_name, xattr_value
             except BaseException and Exception:
                 ...
@@ -853,19 +981,24 @@ class Inode:
                 xattrs_header = ext4_xattr_header.from_buffer_copy(xattrs_block)
                 if not self.volume.ignore_magic and xattrs_header.h_magic != 0xEA020000:
                     # Perhaps you think this code is a bit foolish, but that's all others can do
-                    print(f"Invalid magic value in xattrs block header at offset 0x{xattrs_block_start:X} of "
-                          f"inode {self.inode_idx:d}: 0x{xattrs_header.h_magic} (expected 0xEA020000)")
-                    return '', ''
+                    print(
+                        f"Invalid magic value in xattrs block header at offset 0x{xattrs_block_start:X} of "
+                        f"inode {self.inode_idx:d}: 0x{xattrs_header.h_magic} (expected 0xEA020000)"
+                    )
+                    return "", ""
 
                 if xattrs_header.h_blocks != 1:
-                    print(f"Invalid number of xattr blocks at offset 0x{xattrs_block_start:X} "
-                          f"of inode {self.inode_idx:d}: {xattrs_header.h_blocks:d} (expected 1)")
-                    return '', ''
+                    print(
+                        f"Invalid number of xattr blocks at offset 0x{xattrs_block_start:X} "
+                        f"of inode {self.inode_idx:d}: {xattrs_header.h_blocks:d} (expected 1)"
+                    )
+                    return "", ""
 
-            offset = 4 * ((ctypes.sizeof(
-                ext4_xattr_header) + 3) // 4)
+            offset = 4 * ((ctypes.sizeof(ext4_xattr_header) + 3) // 4)
             # The ext4_xattr_entry following the header is aligned on a 4-byte boundary
-            for xattr_name, xattr_value in self._parse_xattrs(xattrs_block[offset:], -offset):
+            for xattr_name, xattr_value in self._parse_xattrs(
+                xattrs_block[offset:], -offset
+            ):
                 yield xattr_name, xattr_value
 
 
@@ -893,7 +1026,11 @@ class BlockReader:
 
         # Find disk block
         for entry in self.block_map:
-            if entry.file_block_idx <= file_block_idx < entry.file_block_idx + entry.block_count:
+            if (
+                entry.file_block_idx
+                <= file_block_idx
+                < entry.file_block_idx + entry.block_count
+            ):
                 block_diff = file_block_idx - entry.file_block_idx
                 disk_block_idx = entry.disk_block_idx + block_diff
                 break
@@ -906,7 +1043,11 @@ class BlockReader:
             raise ValueError("byte_len must be non-negative or -1")
 
         bytes_remaining = self.byte_size - self.cursor
-        byte_len = bytes_remaining if byte_len == -1 else max(0, min(byte_len, bytes_remaining))
+        byte_len = (
+            bytes_remaining
+            if byte_len == -1
+            else max(0, min(byte_len, bytes_remaining))
+        )
 
         if byte_len == 0:
             return b""
@@ -916,12 +1057,17 @@ class BlockReader:
         end_block_idx = (self.cursor + byte_len - 1) // self.volume.block_size
         end_of_stream_check = byte_len
 
-        blocks = [self.read_block(i) for i in range(start_block_idx, end_block_idx - start_block_idx + 1)]
+        blocks = [
+            self.read_block(i)
+            for i in range(start_block_idx, end_block_idx - start_block_idx + 1)
+        ]
 
         start_offset = self.cursor % self.volume.block_size
         if start_offset != 0:
             blocks[0] = blocks[0][start_offset:]
-        byte_len = (byte_len + start_offset - self.volume.block_size - 1) % self.volume.block_size + 1
+        byte_len = (
+            byte_len + start_offset - self.volume.block_size - 1
+        ) % self.volume.block_size + 1
         blocks[-1] = blocks[-1][:byte_len]
 
         result = b"".join(blocks)
@@ -929,7 +1075,10 @@ class BlockReader:
         # Check read
         if len(result) != end_of_stream_check:
             raise EndOfStreamError(
-                "The volume's underlying stream ended {0:d} bytes before EOF.".format(byte_len - len(result)))
+                "The volume's underlying stream ended {0:d} bytes before EOF.".format(
+                    byte_len - len(result)
+                )
+            )
 
         self.cursor += len(result)
         return result
@@ -938,7 +1087,9 @@ class BlockReader:
         disk_block_idx = self.get_block_mapping(file_block_idx)
 
         if disk_block_idx is not None:
-            return self.volume.read(disk_block_idx * self.volume.block_size, self.volume.block_size)
+            return self.volume.read(
+                disk_block_idx * self.volume.block_size, self.volume.block_size
+            )
         else:
             return bytes([0] * self.volume.block_size)
 
@@ -951,7 +1102,9 @@ class BlockReader:
         #     seek += 0
 
         if seek < 0:
-            raise OSError(BlockReader.EINVAL, "Invalid argument")  # Exception behavior copied from IOBase.seek
+            raise OSError(
+                BlockReader.EINVAL, "Invalid argument"
+            )  # Exception behavior copied from IOBase.seek
 
         self.cursor = seek
         return seek

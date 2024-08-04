@@ -24,7 +24,14 @@ def u64(x):
 
 class Dumper:
     def __init__(
-            self, payloadfile, out, diff=None, old=None, images="", workers=cpu_count(), buffsize=8192
+        self,
+        payloadfile,
+        out,
+        diff=None,
+        old=None,
+        images="",
+        workers=cpu_count(),
+        buffsize=8192,
     ):
         self.payloadpath = payloadfile
         payloadfile = self.open_payloadfile()
@@ -39,7 +46,7 @@ class Dumper:
         self.validate_magic()
 
     def open_payloadfile(self):
-        return open(self.payloadpath, 'rb')
+        return open(self.payloadpath, "rb")
 
     def run(self, slow=False) -> bool:
         if self.images == "":
@@ -92,9 +99,11 @@ class Dumper:
 
     def multiprocess_partitions(self, partitions):
         with ThreadPoolExecutor(max_workers=self.workers) as executor:
-            futures = {executor.submit(self.dump_part, part): part for part in partitions}
+            futures = {
+                executor.submit(self.dump_part, part): part for part in partitions
+            }
             for future in as_completed(futures):
-                partition_name = futures[future]['partition'].partition_name
+                partition_name = futures[future]["partition"].partition_name
                 future.result()
                 print(f"{partition_name} Done!")
 
@@ -126,7 +135,7 @@ class Dumper:
         op_type = op.type
         print(op.type)
         if op.type == op.REPLACE_ZSTD:
-            if payloadfile.read(4) != b'(\xb5/\xfd':
+            if payloadfile.read(4) != b"(\xb5/\xfd":
                 op_type = op.REPLACE
             payloadfile.seek(payloadfile.tell() - 4)
         if op_type == op.REPLACE_ZSTD:
@@ -148,7 +157,7 @@ class Dumper:
                     out_file.write(data)
                     if dec.needs_input or dec.eof:
                         break
-                    data = b''
+                    data = b""
         elif op_type == op.REPLACE_BZ:
             dec = bz2.BZ2Decompressor()
             out_file.seek(op.dst_extents[0].start_block * self.block_size)
@@ -160,13 +169,13 @@ class Dumper:
                     out_file.write(data)
                     if dec.needs_input or dec.eof:
                         break
-                    data = b''
+                    data = b""
         elif op_type == op.REPLACE:
             out_file.seek(op.dst_extents[0].start_block * self.block_size)
             while processed_len < data_length:
-                    data = payloadfile.read(buffsize)
-                    processed_len += len(data)
-                    out_file.write(data)
+                data = payloadfile.read(buffsize)
+                processed_len += len(data)
+                out_file.write(data)
 
         elif op_type == op.SOURCE_COPY:
             if not self.diff:

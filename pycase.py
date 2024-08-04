@@ -15,16 +15,10 @@ from ctypes import (
     c_int,
     Structure,
     sizeof,
-    byref
+    byref,
 )
-from ctypes.wintypes import (
-    HANDLE,
-    LPCSTR,
-    DWORD,
-    BOOL,
-    LPVOID,
-    ULONG
-)
+from ctypes.wintypes import HANDLE, LPCSTR, DWORD, BOOL, LPVOID, ULONG
+
 try:
     from enum import IntEnum
 except ImportError:
@@ -36,7 +30,7 @@ import os.path
 # ==================================================================
 
 # https://stackoverflow.com/questions/29847679/get-error-message-from-ctypes-windll
-kernel32 = WinDLL('kernel32', use_last_error=True)
+kernel32 = WinDLL("kernel32", use_last_error=True)
 
 
 def _check_handle(h, *_):
@@ -74,9 +68,7 @@ FILE_SHARE_VALID_FLAGS = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE
     );
 """
 _CreateFileA = kernel32.CreateFileA
-_CreateFileA.argtypes = [
-    LPCSTR, DWORD, DWORD, c_void_p, DWORD, DWORD, HANDLE
-]
+_CreateFileA.argtypes = [LPCSTR, DWORD, DWORD, c_void_p, DWORD, DWORD, HANDLE]
 _CreateFileA.restype = HANDLE
 _CreateFileA.errcheck = _check_handle
 
@@ -115,11 +107,10 @@ _GetFileInformationByHandleEx.errcheck = _expect_nonzero
 
 # ===== The start of the undocumented craps... =====
 
+
 # /mingw64/include/winbase.h
 class FILE_CASE_SENSITIVE_INFO(Structure):
-    _fields_ = [
-        ('Flags', ULONG)
-    ]
+    _fields_ = [("Flags", ULONG)]
 
 
 FILE_INFO_BY_HANDLE = FILE_CASE_SENSITIVE_INFO
@@ -153,14 +144,16 @@ _SetFileInformationByHandle.errcheck = _expect_nonzero
 # ======================= Wrappers functions =======================
 # ==================================================================
 
-def CreateFileA(path: str, access: int, share: int,
-                oflag: int, flags: int) -> HANDLE:
+
+def CreateFileA(path: str, access: int, share: int, oflag: int, flags: int) -> HANDLE:
     return _CreateFileA(
-        path.encode(encoding='utf-8'),
-        access, share,
+        path.encode(encoding="utf-8"),
+        access,
+        share,
         None,  # default
-        oflag, flags,
-        None  # unused
+        oflag,
+        flags,
+        None,  # unused
     )
 
 
@@ -169,45 +162,43 @@ def CloseHandle(h: HANDLE):
 
 
 def GetFileInformationByHandleEx(
-        h: HANDLE,
-        kind: FILE_INFO_BY_HANDLE_CLASS
+    h: HANDLE, kind: FILE_INFO_BY_HANDLE_CLASS
 ) -> FILE_INFO_BY_HANDLE:
     if kind == FILE_INFO_BY_HANDLE_CLASS.FileCaseSensitiveInfo:
         dtype = FILE_CASE_SENSITIVE_INFO
     else:
-        raise ValueError('Invalid file info class')
+        raise ValueError("Invalid file info class")
 
     data = dtype()
 
-    _GetFileInformationByHandleEx(h, kind,
-                                  byref(data), sizeof(dtype))
+    _GetFileInformationByHandleEx(h, kind, byref(data), sizeof(dtype))
 
     return data
 
 
 def SetFileInformationByHandle(
-        h: HANDLE,
-        kind: FILE_INFO_BY_HANDLE_CLASS,
-        data: FILE_INFO_BY_HANDLE
+    h: HANDLE, kind: FILE_INFO_BY_HANDLE_CLASS, data: FILE_INFO_BY_HANDLE
 ):
     if kind == FILE_INFO_BY_HANDLE_CLASS.FileCaseSensitiveInfo:
         dtype = FILE_CASE_SENSITIVE_INFO
     else:
-        raise ValueError('Invalid file info class')
+        raise ValueError("Invalid file info class")
 
-    _SetFileInformationByHandle(h, kind,
-                                byref(data), sizeof(dtype))
+    _SetFileInformationByHandle(h, kind, byref(data), sizeof(dtype))
 
 
 # ==================================================================
 # ======================== Helper functions ========================
 # ==================================================================
 
+
 def open_dir_handle(path: str, access: int) -> HANDLE:
     return CreateFileA(
-        path, access,
-        FILE_SHARE_VALID_FLAGS, OPEN_EXISTING,
-        FILE_FLAG_POSIX_SEMANTICS | FILE_FLAG_BACKUP_SEMANTICS
+        path,
+        access,
+        FILE_SHARE_VALID_FLAGS,
+        OPEN_EXISTING,
+        FILE_FLAG_POSIX_SEMANTICS | FILE_FLAG_BACKUP_SEMANTICS,
     )
 
 
@@ -215,11 +206,10 @@ def open_dir_handle(path: str, access: int) -> HANDLE:
 # ======================= Exported functions ========================
 # ==================================================================
 
+
 def ensure_dir_case_sensitive(path: str):
     if not os.path.isdir(path):
-        raise NotADirectoryError(
-            f'Cannot set case sensitive for non-directory: {path}'
-        )
+        raise NotADirectoryError(f"Cannot set case sensitive for non-directory: {path}")
 
     h = open_dir_handle(path, GENERIC_READ)
     try:
@@ -228,7 +218,7 @@ def ensure_dir_case_sensitive(path: str):
         )
 
         if info.Flags & FILE_CS_FLAG_CASE_SENSITIVE_DIR:
-            print(f'{path!r} is already case sensitive')
+            print(f"{path!r} is already case sensitive")
         else:
             h2 = open_dir_handle(path, GENERIC_WRITE)
 
@@ -236,14 +226,11 @@ def ensure_dir_case_sensitive(path: str):
                 info.Flags |= FILE_CS_FLAG_CASE_SENSITIVE_DIR
 
                 SetFileInformationByHandle(
-                    h2,
-                    FILE_INFO_BY_HANDLE_CLASS.FileCaseSensitiveInfo,
-                    info
+                    h2, FILE_INFO_BY_HANDLE_CLASS.FileCaseSensitiveInfo, info
                 )
 
-                print(f'set case sensitive state for {path!r}')
+                print(f"set case sensitive state for {path!r}")
             finally:
                 CloseHandle(h2)
     finally:
         CloseHandle(h)
-

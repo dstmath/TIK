@@ -26,7 +26,7 @@ def keyshuffle(key, hkey):
 
 
 def ROR(x, n, bits=32):
-    mask = (2 ** n) - 1
+    mask = (2**n) - 1
     mask_bits = x & mask
     return (x >> n) | (mask_bits << (bits - n))
 
@@ -45,9 +45,9 @@ def generatekey1():
     key3 = bytearray.fromhex(key3)
 
     key2 = keyshuffle(key2, key3)
-    aeskey = bytes(hashlib.md5(key2).hexdigest()[0:16], 'utf-8')
+    aeskey = bytes(hashlib.md5(key2).hexdigest()[0:16], "utf-8")
     key1 = keyshuffle(key1, key3)
-    iv = bytes(hashlib.md5(key1).hexdigest()[0:16], 'utf-8')
+    iv = bytes(hashlib.md5(key1).hexdigest()[0:16], "utf-8")
     return aeskey, iv
 
 
@@ -69,42 +69,47 @@ def deobfuscate(data, mask):
 def generatekey2(filename):
     keys = [
         # R9s/A57t
-        ["V1.4.17/1.4.27",
-         "27827963787265EF89D126B69A495A21",
-         "82C50203285A2CE7D8C3E198383CE94C",
-         "422DD5399181E223813CD8ECDF2E4D72"],
-
+        [
+            "V1.4.17/1.4.27",
+            "27827963787265EF89D126B69A495A21",
+            "82C50203285A2CE7D8C3E198383CE94C",
+            "422DD5399181E223813CD8ECDF2E4D72",
+        ],
         # a3s
-        ["V1.6.17",
-         "E11AA7BB558A436A8375FD15DDD4651F",
-         "77DDF6A0696841F6B74782C097835169",
-         "A739742384A44E8BA45207AD5C3700EA"],
-
-        ["V1.5.13",
-         "67657963787565E837D226B69A495D21",
-         "F6C50203515A2CE7D8C3E1F938B7E94C",
-         "42F2D5399137E2B2813CD8ECDF2F4D72"],
-
+        [
+            "V1.6.17",
+            "E11AA7BB558A436A8375FD15DDD4651F",
+            "77DDF6A0696841F6B74782C097835169",
+            "A739742384A44E8BA45207AD5C3700EA",
+        ],
+        [
+            "V1.5.13",
+            "67657963787565E837D226B69A495D21",
+            "F6C50203515A2CE7D8C3E1F938B7E94C",
+            "42F2D5399137E2B2813CD8ECDF2F4D72",
+        ],
         # R15 Pro CPH1831 V1.6.6 / FindX CPH1871 V1.6.9 / R17 Pro CPH1877 V1.6.17 / R17 PBEM00 V1.6.17 / A5 2020 V1.7.6 / K3 CPH1955 V1.6.26 UFS
         # Reno 5G CPH1921 V1.6.26 / Realme 3 Pro RMX1851 V1.6.17 / Reno 10X Zoom V1.6.26 / R17 CPH1879 V1.6.17 / R17 Neo CPH1893 / K1 PBCM30
-
-        ["V1.6.6/1.6.9/1.6.17/1.6.24/1.6.26/1.7.6",
-         "3C2D518D9BF2E4279DC758CD535147C3",
-         "87C74A29709AC1BF2382276C4E8DF232",
-         "598D92E967265E9BCABE2469FE4A915E"],
-
+        [
+            "V1.6.6/1.6.9/1.6.17/1.6.24/1.6.26/1.7.6",
+            "3C2D518D9BF2E4279DC758CD535147C3",
+            "87C74A29709AC1BF2382276C4E8DF232",
+            "598D92E967265E9BCABE2469FE4A915E",
+        ],
         # RM1921EX V1.7.2, Realme X RMX1901 V1.7.2, Realme 5 Pro RMX1971 V1.7.2, Realme 5 RMX1911 V1.7.2
-        ["V1.7.2",
-         "8FB8FB261930260BE945B841AEFA9FD4",
-         "E529E82B28F5A2F8831D860AE39E425D",
-         "8A09DA60ED36F125D64709973372C1CF"],
-
+        [
+            "V1.7.2",
+            "8FB8FB261930260BE945B841AEFA9FD4",
+            "E529E82B28F5A2F8831D860AE39E425D",
+            "8A09DA60ED36F125D64709973372C1CF",
+        ],
         # OW19W8AP_11_A.23_200715
-        ["V2.0.3",
-         "E8AE288C0192C54BF10C5707E9C4705B",
-         "D64FC385DCD52A3C9B5FBA8650F92EDA",
-         "79051FD8D8B6297E2E4559E997F63B7F"]
-
+        [
+            "V2.0.3",
+            "E8AE288C0192C54BF10C5707E9C4705B",
+            "D64FC385DCD52A3C9B5FBA8650F92EDA",
+            "79051FD8D8B6297E2E4559E997F63B7F",
+        ],
     ]
 
     for dkey in keys:
@@ -132,7 +137,7 @@ def generatekey2(filename):
 
 def extract_xml(filename, key, iv):
     filesize = os.stat(filename).st_size
-    with open(filename, 'rb') as rf:
+    with open(filename, "rb") as rf:
         pagesize = 0
         for x in [0x200, 0x1000]:
             rf.seek(filesize - x + 0x10)
@@ -187,8 +192,8 @@ def copysub(rf, wf, start, length):
 
 def copy(filename, wfilename, path, start, length, checksums):
     print(f"\nExtracting {wfilename}")
-    with open(filename, 'rb') as rf:
-        with open(os.path.join(path, wfilename), 'wb') as wf:
+    with open(filename, "rb") as rf:
+        with open(os.path.join(path, wfilename), "wb") as wf:
             rf.seek(start)
             data = rf.read(length)
             wf.write(data)
@@ -196,23 +201,34 @@ def copy(filename, wfilename, path, start, length, checksums):
     checkhashfile(os.path.join(path, wfilename), checksums, True)
 
 
-def decryptfile(key, iv, filename, path, wfilename, start, length, rlength, checksums, decryptsize=0x40000):
+def decryptfile(
+    key,
+    iv,
+    filename,
+    path,
+    wfilename,
+    start,
+    length,
+    rlength,
+    checksums,
+    decryptsize=0x40000,
+):
     print(f"\nExtracting {wfilename}")
     if rlength == length:
         tlen = length
-        length = (length // 0x4 * 0x4)
+        length = length // 0x4 * 0x4
         if tlen % 0x4 != 0:
             length += 0x4
 
-    with open(filename, 'rb') as rf:
-        with open(os.path.join(path, wfilename), 'wb') as wf:
+    with open(filename, "rb") as rf:
+        with open(os.path.join(path, wfilename), "wb") as wf:
             rf.seek(start)
             size = decryptsize
             if rlength < decryptsize:
                 size = rlength
             data = rf.read(size)
             if size % 4:
-                data += (4 - (size % 4)) * b'\x00'
+                data += (4 - (size % 4)) * b"\x00"
             outp = aes_cfb(data, key, iv)
             wf.write(outp[:size])
 
@@ -256,7 +272,11 @@ def checkhashfile(wfilename, checksums, iscopy):
                 md5status = "bad"
             else:
                 md5status = "verified"
-        if (sha256bad and md5bad) or (sha256bad and md5sum == "") or (md5bad and sha256sum == ""):
+        if (
+            (sha256bad and md5bad)
+            or (sha256bad and md5sum == "")
+            or (md5bad and sha256sum == "")
+        ):
             print(f"{prefix}error on hashes. File might be broken!")
         else:
             print(f"{prefix}success! (md5: {md5status} | sha256: {sha256status})")
@@ -301,7 +321,7 @@ def main(filename, outdir):
 
     if pk:
         print("Zip file detected, trying to decrypt files")
-        zippw = bytes("flash@realme$50E7F7D847732396F1582CD62DD385ED7ABB0897", 'utf-8')
+        zippw = bytes("flash@realme$50E7F7D847732396F1582CD62DD385ED7ABB0897", "utf-8")
         with zipfile.ZipFile(filename) as file:
             for zfile in file.namelist():
                 print("Extracting " + zfile + " to " + outdir)
@@ -315,12 +335,12 @@ def main(filename, outdir):
         print("Unknown key. Aborting")
         return
     else:
-        xml = data[:data.rfind(b">") + 1].decode('utf-8')
+        xml = data[: data.rfind(b">") + 1].decode("utf-8")
 
     if "/" in filename:
-        path = filename[:filename.rfind("/")]
+        path = filename[: filename.rfind("/")]
     elif "\\" in filename:
-        path = filename[:filename.rfind("\\")]
+        path = filename[: filename.rfind("\\")]
     else:
         path = ""
 
@@ -339,21 +359,52 @@ def main(filename, outdir):
         for item in child:
             if "Path" not in item.attrib and "filename" not in item.attrib:
                 for subitem in item:
-                    wfilename, start, length, rlength, checksums, decryptsize = decryptitem(subitem, pagesize)
+                    wfilename, start, length, rlength, checksums, decryptsize = (
+                        decryptitem(subitem, pagesize)
+                    )
                     if wfilename == "" or start == -1:
                         continue
-                    decryptfile(key, iv, filename, path, wfilename, start, length, rlength, checksums, decryptsize)
-            wfilename, start, length, rlength, checksums, decryptsize = decryptitem(item, pagesize)
+                    decryptfile(
+                        key,
+                        iv,
+                        filename,
+                        path,
+                        wfilename,
+                        start,
+                        length,
+                        rlength,
+                        checksums,
+                        decryptsize,
+                    )
+            wfilename, start, length, rlength, checksums, decryptsize = decryptitem(
+                item, pagesize
+            )
             if wfilename == "" or start == -1:
                 continue
             if child.tag in ["Sahara"]:
                 decryptsize = rlength
-            if child.tag in ["Config", "Provision", "ChainedTableOfDigests", "DigestsToSign", "Firmware"]:
+            if child.tag in [
+                "Config",
+                "Provision",
+                "ChainedTableOfDigests",
+                "DigestsToSign",
+                "Firmware",
+            ]:
                 length = rlength
             if child.tag in ["DigestsToSign", "ChainedTableOfDigests", "Firmware"]:
                 copy(filename, wfilename, path, start, length, checksums)
             else:
-                decryptfile(key, iv, filename, path, wfilename, start, length, rlength, checksums, decryptsize)
+                decryptfile(
+                    key,
+                    iv,
+                    filename,
+                    path,
+                    wfilename,
+                    start,
+                    length,
+                    rlength,
+                    checksums,
+                    decryptsize,
+                )
     print("\nDone. Extracted files to " + path)
     return 0
-

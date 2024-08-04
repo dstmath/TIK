@@ -35,32 +35,34 @@ def v_code(num=6) -> str:
 
 
 def modify(path):
-    with open(path + os.sep + 'run.sh', 'r', encoding='utf-8', newline='\n') as f, open(path + os.sep + "main.sh", 'w',
-                                                                                        encoding='utf-8',
-                                                                                        newline='\n') as m:
+    with open(path + os.sep + "run.sh", "r", encoding="utf-8", newline="\n") as f, open(
+        path + os.sep + "main.sh", "w", encoding="utf-8", newline="\n"
+    ) as m:
         for v in f.readlines():
             if v.startswith('subdir=$(dirname $(readlink -f "$0"))'):
                 m.write('subdir=$(dirname "$1")\n')
             else:
-                m.write(v.replace('$1', '$project'))
-    os.remove(path + os.sep + 'run.sh')
+                m.write(v.replace("$1", "$project"))
+    os.remove(path + os.sep + "run.sh")
 
 
 def export(path, name, local):
     if not path:
         print("路径不存在")
         return 1
-    (info_ := ConfigParser())['module'] = {
-        'name': f'{name}',
-        'version': '1.0',
-        'author': 'zip2mpk',
-        'describe': f'{name}',
-        'resource': 'main.zip',
-        'identifier': f'{v_code()}',
-        'depend': ''
+    (info_ := ConfigParser())["module"] = {
+        "name": f"{name}",
+        "version": "1.0",
+        "author": "zip2mpk",
+        "describe": f"{name}",
+        "resource": "main.zip",
+        "identifier": f"{v_code()}",
+        "depend": "",
     }
     info_.write((buffer2 := StringIO()))
-    with zipfile.ZipFile((buffer := BytesIO()), 'w', compression=zipfile.ZIP_DEFLATED, allowZip64=True) as mpk:
+    with zipfile.ZipFile(
+        (buffer := BytesIO()), "w", compression=zipfile.ZIP_DEFLATED, allowZip64=True
+    ) as mpk:
         os.chdir(path)
         for i in get_all_file_paths("."):
             print(f"正在写入:%s" % i.rsplit(".\\")[1])
@@ -68,10 +70,14 @@ def export(path, name, local):
                 mpk.write(i)
             except Exception as e:
                 print("写入失败:{}{}".format(i, e))
-    with zipfile.ZipFile("".join([local, os.sep, name, ".mpk"]), 'w',
-                         compression=zipfile.ZIP_DEFLATED, allowZip64=True) as mpk2:
-        mpk2.writestr('main.zip', buffer.getvalue())
-        mpk2.writestr('info', buffer2.getvalue())
+    with zipfile.ZipFile(
+        "".join([local, os.sep, name, ".mpk"]),
+        "w",
+        compression=zipfile.ZIP_DEFLATED,
+        allowZip64=True,
+    ) as mpk2:
+        mpk2.writestr("main.zip", buffer.getvalue())
+        mpk2.writestr("info", buffer2.getvalue())
     os.chdir(local)
     if os.path.exists(local + os.sep + name + ".mpk"):
         return local + os.sep + name + ".mpk"
@@ -91,7 +97,9 @@ def main(path, local):
             print("正在修改主脚本")
             modify(tmpdirname)
             print("打包为MPK")
-            out = export(tmpdirname, os.path.basename(path.split('.')[0]), os.path.dirname(path))
+            out = export(
+                tmpdirname, os.path.basename(path.split(".")[0]), os.path.dirname(path)
+            )
         os.chdir(local)
         try:
             os.remove(path)

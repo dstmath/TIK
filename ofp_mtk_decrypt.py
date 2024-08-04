@@ -26,7 +26,7 @@ def keyshuffle(key, hkey):
 def mtk_shuffle(key, keylength, input, inputlength):
     for i in range(0, inputlength):
         k = key[(i % keylength)]
-        h = ((((input[i]) & 0xF0) >> 4) | (16 * ((input[i]) & 0xF)))
+        h = (((input[i]) & 0xF0) >> 4) | (16 * ((input[i]) & 0xF))
         input[i] = k ^ h
     return input
 
@@ -49,43 +49,47 @@ def aes_cfb(key, iv, data, decrypt=True, segment_size=128):
 
 
 keytables = [
-    ["67657963787565E837D226B69A495D21",  # A77 CPH1715EX_11_A.04_170426, F1S A1601_MT6750_EX_11_A.15_160913 FW
-     "F6C50203515A2CE7D8C3E1F938B7E94C",
-     "42F2D5399137E2B2813CD8ECDF2F4D72"],
-
-    ["9E4F32639D21357D37D226B69A495D21",  # A77 CPH1715EX_11_A.04_170426, F1S A1601_MT6750_EX_11_A.15_160913 CDT
-     "A3D8D358E42F5A9E931DD3917D9A3218",
-     "386935399137416B67416BECF22F519A"],
-
-    ["892D57E92A4D8A975E3C216B7C9DE189",
-     "D26DF2D9913785B145D18C7219B89F26",
-     "516989E4A1BFC78B365C6BC57D944391"],
-
-    ["27827963787265EF89D126B69A495A21",
-     "82C50203285A2CE7D8C3E198383CE94C",
-     "422DD5399181E223813CD8ECDF2E4D72"],
-
-    ["3C4A618D9BF2E4279DC758CD535147C3",
-     "87B13D29709AC1BF2382276C4E8DF232",
-     "59B7A8E967265E9BCABE2469FE4A915E"],
-
-    ["1C3288822BF824259DC852C1733127D3",  # A83_CPH1827_11_A.21_2G_180923 FW, Realme 3 RMX1827EX_11_C.13_200624_1264686e
-     "E7918D22799181CF2312176C9E2DF298",
-     "3247F889A7B6DECBCA3E28693E4AAAFE"],
-
-    ["1E4F32239D65A57D37D2266D9A775D43",
-     "A332D3C3E42F5A3E931DD991729A321D",
-     "3F2A35399A373377674155ECF28FD19A"],
-
-    ["122D57E92A518AFF5E3C786B7C34E189",
-     "DD6DF2D9543785674522717219989FB0",
-     "12698965A132C76136CC88C5DD94EE91"],
-
     [
-        "ab3f76d7989207f2",  # AES KEY
-        "2bf515b3a9737835"  # AES IV
-    ]
-
+        "67657963787565E837D226B69A495D21",  # A77 CPH1715EX_11_A.04_170426, F1S A1601_MT6750_EX_11_A.15_160913 FW
+        "F6C50203515A2CE7D8C3E1F938B7E94C",
+        "42F2D5399137E2B2813CD8ECDF2F4D72",
+    ],
+    [
+        "9E4F32639D21357D37D226B69A495D21",  # A77 CPH1715EX_11_A.04_170426, F1S A1601_MT6750_EX_11_A.15_160913 CDT
+        "A3D8D358E42F5A9E931DD3917D9A3218",
+        "386935399137416B67416BECF22F519A",
+    ],
+    [
+        "892D57E92A4D8A975E3C216B7C9DE189",
+        "D26DF2D9913785B145D18C7219B89F26",
+        "516989E4A1BFC78B365C6BC57D944391",
+    ],
+    [
+        "27827963787265EF89D126B69A495A21",
+        "82C50203285A2CE7D8C3E198383CE94C",
+        "422DD5399181E223813CD8ECDF2E4D72",
+    ],
+    [
+        "3C4A618D9BF2E4279DC758CD535147C3",
+        "87B13D29709AC1BF2382276C4E8DF232",
+        "59B7A8E967265E9BCABE2469FE4A915E",
+    ],
+    [
+        "1C3288822BF824259DC852C1733127D3",  # A83_CPH1827_11_A.21_2G_180923 FW, Realme 3 RMX1827EX_11_C.13_200624_1264686e
+        "E7918D22799181CF2312176C9E2DF298",
+        "3247F889A7B6DECBCA3E28693E4AAAFE",
+    ],
+    [
+        "1E4F32239D65A57D37D2266D9A775D43",
+        "A332D3C3E42F5A3E931DD991729A321D",
+        "3F2A35399A373377674155ECF28FD19A",
+    ],
+    [
+        "122D57E92A518AFF5E3C786B7C34E189",
+        "DD6DF2D9543785674522717219989FB0",
+        "12698965A132C76136CC88C5DD94EE91",
+    ],
+    ["ab3f76d7989207f2", "2bf515b3a9737835"],  # AES KEY  # AES IV
 ]
 
 
@@ -95,11 +99,15 @@ def getkey(index):
         obskey = bytearray(unhexlify(kt[0]))
         encaeskey = bytearray(unhexlify(kt[1]))
         encaesiv = bytearray(unhexlify(kt[2]))
-        aeskey = hexlify(hashlib.md5(mtk_shuffle2(obskey, 16, encaeskey, 16)).digest())[:16]
-        aesiv = hexlify(hashlib.md5(mtk_shuffle2(obskey, 16, encaesiv, 16)).digest())[:16]
+        aeskey = hexlify(hashlib.md5(mtk_shuffle2(obskey, 16, encaeskey, 16)).digest())[
+            :16
+        ]
+        aesiv = hexlify(hashlib.md5(mtk_shuffle2(obskey, 16, encaesiv, 16)).digest())[
+            :16
+        ]
     else:
-        aeskey = bytes(kt[0], 'utf-8')
-        aesiv = bytes(kt[1], 'utf-8')
+        aeskey = bytes(kt[0], "utf-8")
+        aesiv = bytes(kt[1], "utf-8")
         print(aeskey, aesiv)
     return aeskey, aesiv
 
@@ -117,7 +125,7 @@ def brutekey(rf):
 
 
 def cleancstring(input):
-    return input.replace(b"\x00", b"").decode('utf-8')
+    return input.replace(b"\x00", b"").decode("utf-8")
 
 
 def main(filename, outdir):
@@ -126,29 +134,39 @@ def main(filename, outdir):
     hdrkey = bytearray(b"geyixue")
     filesize = os.stat(filename).st_size
     hdrlength = 0x6C
-    with open(filename, 'rb') as rf:
+    with open(filename, "rb") as rf:
         aeskey, aesiv = brutekey(rf)
         rf.seek(filesize - hdrlength)
         hdr = mtk_shuffle(hdrkey, len(hdrkey), bytearray(rf.read(hdrlength)), hdrlength)
-        prjname, unknownval, reserved, cpu, flashtype, hdr2entries, prjinfo, crc = unpack("46s Q 4s 7s 5s H 32s H", hdr)
+        prjname, unknownval, reserved, cpu, flashtype, hdr2entries, prjinfo, crc = (
+            unpack("46s Q 4s 7s 5s H 32s H", hdr)
+        )
         hdr2length = hdr2entries * 0x60
         prjname = cleancstring(prjname)
         prjinfo = cleancstring(prjinfo)
         cpu = cleancstring(cpu)
         flashtype = cleancstring(flashtype)
-        if prjname != "": print(f"Detected prjname:{prjname}")
-        if prjinfo != "": print(f"Detected prjinfo:{prjinfo}")
-        if cpu != "": print(f"Detected cpu:{cpu}")
-        if flashtype != "": print(f"Detected flash:{flashtype}")
+        if prjname != "":
+            print(f"Detected prjname:{prjname}")
+        if prjinfo != "":
+            print(f"Detected prjinfo:{prjinfo}")
+        if cpu != "":
+            print(f"Detected cpu:{cpu}")
+        if flashtype != "":
+            print(f"Detected flash:{flashtype}")
 
         rf.seek(filesize - hdr2length - hdrlength)
-        hdr2 = mtk_shuffle(hdrkey, len(hdrkey), bytearray(rf.read(hdr2length)), hdr2length)
+        hdr2 = mtk_shuffle(
+            hdrkey, len(hdrkey), bytearray(rf.read(hdr2length)), hdr2length
+        )
         for i in range(0, len(hdr2) // 0x60):
-            name, start, length, enclength, filename, crc = unpack("<32s Q Q Q 32s Q", hdr2[i * 0x60:(i * 0x60) + 0x60])
-            name = name.replace(b"\x00", b"").decode('utf-8')
-            filename = filename.replace(b"\x00", b"").decode('utf-8')
-            print(f"Writing \"{name}\" as \"{outdir}/{filename}\"...")
-            with open(os.path.join(outdir, filename), 'wb') as wb:
+            name, start, length, enclength, filename, crc = unpack(
+                "<32s Q Q Q 32s Q", hdr2[i * 0x60 : (i * 0x60) + 0x60]
+            )
+            name = name.replace(b"\x00", b"").decode("utf-8")
+            filename = filename.replace(b"\x00", b"").decode("utf-8")
+            print(f'Writing "{name}" as "{outdir}/{filename}"...')
+            with open(os.path.join(outdir, filename), "wb") as wb:
                 if enclength > 0:
                     rf.seek(start)
                     encdata = rf.read(enclength)
