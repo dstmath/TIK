@@ -1532,19 +1532,9 @@ def inpacker(name, project, form, ftype, json_=None):
 
 
 def versize(size):
-    size_ = size
-    diff_size = size_
-    for i_ in range(20):
-        if not i_:
-            continue
-        i_ = i_ - 0.5
-        t = 1024 * 1024 * 1024 * i_ - size_
-        if t < 0:
-            continue
-        if t < diff_size:
-            diff_size = t
-        else:
-            return int(i_ * 1024 * 1024 * 1024)
+    size_gb = size / (1024 * 1024 * 1024)
+    closest_half_gb = (int(size_gb * 2) + 1) / 2.0
+    return int(closest_half_gb * 1024 * 1024 * 1024)
 
 
 def packsuper(project):
