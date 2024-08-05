@@ -660,13 +660,9 @@ class Tool:
                 print(f"   [{pro}]  {pros}\n")
                 projects[str(pro)] = pros
         print("  --------------------------------------")
-        print("\033[33m  [55] 解压  [66] 退出  [77] 设置  [88] 下载ROM\033[0m\n")
+        print("\033[33m  [77] 设置  [88] 退出\033[0m\n")
         op_pro = input("  请输入序号：")
-        if op_pro == "55":
-            ywarn("不支持解压功能")
-        elif op_pro == "88":
-            ywarn("不支持下载功能")
-        elif op_pro == "00":
+        if op_pro == "00":
             op_pro = input("  请输入你要删除的项目序号:")
             op_pro = op_pro.split() if " " in op_pro else [op_pro]
             for op in op_pro:
@@ -688,7 +684,7 @@ class Tool:
             else:
                 ywarn("  Input error!")
                 input("任意按钮继续")
-        elif op_pro == "66":
+        elif op_pro == "88":
             cls()
             ysuc("\n感谢使用TI-KITCHEN5,再见！")
             sys.exit(0)
@@ -768,7 +764,7 @@ class Tool:
         if not os.path.exists(project_dir + os.sep + "TI_out"):
             os.makedirs(project_dir + os.sep + "TI_out")
         print("\033[33m    0> 回到主页     2> 解包菜单\033[0m\n")
-        print("\033[36m    3> 打包菜单     4> 定制功能\033[0m\n")
+        print("\033[33m    3> 打包菜单     4> 定制功能\033[0m\n")
         op_menu = input("    请输入编号: ")
         if op_menu == "0":
             os.chdir(LOCALDIR)
@@ -1102,7 +1098,7 @@ def packChoo(project):
                     types[partn] = "dtbo"
                     print(f"   [{partn}]- {packs} <dtbo>\n")
         print(
-            "\n\033[33m [55] 循环打包 [66] 打包Super [77] 打包Payload [00]返回\033[0m"
+            "\n\033[33m [55] 循环打包 [66] 打包Super [00]返回\033[0m"
         )
         print("  --------------------------------------")
         filed = input("  请输入对应序号：")
