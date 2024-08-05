@@ -12,10 +12,7 @@ from random import randint, choice
 from shutil import move, rmtree
 from threading import Thread
 
-import zstandard
-
 import blockimgdiff
-import sparse_img
 from os import getcwd
 import platform as plat
 import update_metadata_pb2 as um
