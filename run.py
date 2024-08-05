@@ -37,7 +37,6 @@ import utils
 from api import cls, dir_has, cat, dirsize, re_folder, f_remove
 from log import LOGS, LOGE, ysuc, yecho, ywarn
 from utils import gettype, simg2img, call
-import zip2mpk
 from rich.table import Table
 from rich.console import Console
 
@@ -664,15 +663,9 @@ class Tool:
         print("\033[33m  [55] 解压  [66] 退出  [77] 设置  [88] 下载ROM\033[0m\n")
         op_pro = input("  请输入序号：")
         if op_pro == "55":
-            self.unpackrom()
+            ywarn("不支持解压功能")
         elif op_pro == "88":
-            url = input("输入下载链接:")
-            if url:
-                try:
-                    downloader.download([url], LOCALDIR)
-                except (Exception, BaseException):
-                    ...
-                self.unpackrom()
+            ywarn("不支持下载功能")
         elif op_pro == "00":
             op_pro = input("  请输入你要删除的项目序号:")
             op_pro = op_pro.split() if " " in op_pro else [op_pro]
@@ -775,8 +768,7 @@ class Tool:
         if not os.path.exists(project_dir + os.sep + "TI_out"):
             os.makedirs(project_dir + os.sep + "TI_out")
         print("\033[33m    0> 回到主页     2> 解包菜单\033[0m\n")
-        print("\033[36m    3> 打包菜单     4> 插件菜单\033[0m\n")
-        print("\033[32m    5> 一键封装     6> 定制功能\033[0m\n")
+        print("\033[36m    3> 打包菜单     4> 定制功能\033[0m\n")
         op_menu = input("    请输入编号: ")
         if op_menu == "0":
             os.chdir(LOCALDIR)
@@ -786,10 +778,6 @@ class Tool:
         elif op_menu == "3":
             packChoo(project_dir)
         elif op_menu == "4":
-            subbed(project_dir)
-        elif op_menu == "5":
-            ywarn("不支持")
-        elif op_menu == "6":
             self.custom_rom()
         else:
             ywarn("   Input error!")
@@ -801,18 +789,23 @@ class Tool:
         print(" \033[31m>定制菜单 \033[0m\n")
         print(f"  项目：{self.pro}\n")
         print("\033[33m    0> 返回上级  1> 面具修补\033[0m\n")
-        print("\033[33m    2> 去除avb   3> 去除data加密\033[0m\n")
+        print("\033[33m    2> KSU修补   3> Apatch修补\033[0m\n")
+        print("\033[33m    4> 去除avb   5> 去除data加密\033[0m\n")
         op_menu = input("    请输入编号: ")
         if op_menu == "0":
             return
         elif op_menu == "1":
             self.magisk_patch()
         elif op_menu == "2":
+            self.ksu_patch()
+        elif op_menu == "3":
+            self.apatch_patch()
+        elif op_menu == "4":
             for root, dirs, files in os.walk(LOCALDIR + os.sep + self.pro):
                 for file in files:
                     if file.startswith("fstab."):
                         self.dis_avb(os.path.join(root, file))
-        elif op_menu == "3":
+        elif op_menu == "5":
             for root, dirs, files in os.walk(LOCALDIR + os.sep + self.pro):
                 for file in files:
                     if file.startswith("fstab."):
@@ -821,6 +814,10 @@ class Tool:
             ywarn("   Input error!")
         input("任意按钮继续")
         self.custom_rom()
+
+    def ksu_patch(self): ...
+
+    def apatch_patch(self): ...
 
     def magisk_patch(self):
         cls()
@@ -906,7 +903,6 @@ class Tool:
             LOCALDIR + os.sep,
         )
 
-    def unpackrom(self):
         cls()
         zipn = 0
         zips = {}
@@ -985,66 +981,6 @@ class zip_file:
         os.chdir(local)
 
 
-def subbed(project):
-    if not os.path.exists(binner + os.sep + "subs"):
-        os.makedirs(binner + os.sep + "subs")
-    cls()
-    subn = 0
-    mysubs = {}
-    names = {}
-    print(" >\033[31m插件列表 \033[0m\n")
-    for sub in os.listdir(binner + os.sep + "subs"):
-        if os.path.isfile(
-            binner + os.sep + "subs" + os.sep + sub + os.sep + "info.json"
-        ):
-            with open(
-                binner + os.sep + "subs" + os.sep + sub + os.sep + "info.json"
-            ) as l_info:
-                name = json.load(l_info)["name"]
-            subn += 1
-            print(f"   [{subn}]- {name}\n")
-            mysubs[subn] = sub
-            names[subn] = name
-    print("----------------------------------------------\n")
-    print("\033[33m> [66]-安装 [77]-删除 [0]-返回\033[0m")
-    op_pro = input("请输入序号：")
-    if op_pro == "66":
-        path = input("请输入插件路径或[拖入]:")
-        if os.path.exists(path) and not path.endswith(".zip2"):
-            installmpk(path)
-        elif path.endswith(".zip2"):
-            installmpk(zip2mpk.main(path, os.getcwd()))
-        else:
-            ywarn(f"{path}不存在！")
-        input("任意按钮继续")
-    elif op_pro == "77":
-        chose = input("输入插件序号:")
-        (
-            unmpk(mysubs[int(chose)], names[int(chose)], binner + os.sep + "subs")
-            if int(chose) in mysubs.keys()
-            else ywarn("序号错误")
-        )
-    elif op_pro == "0":
-        return
-    elif op_pro.isdigit():
-        if int(op_pro) in mysubs.keys():
-            plugin_path = os.path.join(binner, "subs", mysubs[int(op_pro)])
-            if os.path.exists(plugin_path + os.sep + "main.sh"):
-                if os.path.exists(plugin_path + os.sep + "main.json"):
-                    gavs, value = plug_parse(os.path.join(plugin_path, "main.json"))
-                    gen = gen_sh_engine(project, gavs, value)
-                else:
-                    gen = gen_sh_engine(project)
-                call(
-                    f'busybox ash {gen} {os.path.join(plugin_path, "main.sh").replace(os.sep, "/")}'
-                )
-                f_remove(gen)
-            else:
-                ywarn(f"{mysubs[int(op_pro)]}为环境插件，不可运行！")
-            input("任意按钮返回")
-    subbed(project)
-
-
 def gen_sh_engine(project, gavs=None, value=None):
     if not os.path.exists(temp):
         os.makedirs(temp)
@@ -1057,174 +993,6 @@ def gen_sh_engine(project, gavs=None, value=None):
                 en.write(f"export {i}='{gavs[i]}'\n")
         en.write(f"source $1\n")
     return engine.replace(os.sep, "/")
-
-
-class installmpk:
-    def __init__(self, mpk):
-        super().__init__()
-        self.mconf = ConfigParser()
-        if not mpk:
-            ywarn("插件不存在")
-            return
-        if not zipfile.is_zipfile(mpk):
-            ywarn("非插件！")
-            input("任意按钮返回")
-        with zipfile.ZipFile(mpk, "r") as myfile:
-            with myfile.open("info") as info_file:
-                self.mconf.read_string(info_file.read().decode("utf-8"))
-            with myfile.open(self.mconf.get("module", "resource"), "r") as inner_file:
-                self.inner_zipdata = inner_file.read()
-                self.inner_filenames = zipfile.ZipFile(
-                    BytesIO(self.inner_zipdata)
-                ).namelist()
-        print(
-            """
-         \033[36m
-        ----------------
-           安装新插件
-        ----------------
-        """
-        )
-        print("插件名称：" + self.mconf.get("module", "name"))
-        print(
-            "版本:%s\n作者：%s"
-            % (
-                self.mconf.get("module", "version"),
-                (self.mconf.get("module", "author")),
-            )
-        )
-        print("介绍:")
-        print(self.mconf.get("module", "describe"))
-        print("\033[0m\n")
-        if input("要安装吗? [1/0]") == "1":
-            self.install()
-        else:
-            yecho("取消安装")
-            input("任意按钮返回")
-
-    def install(self):
-        try:
-            supports = self.mconf.get("module", "supports").split()
-        except (Exception, BaseException):
-            supports = [sys.platform]
-        if sys.platform not in supports:
-            ywarn(f"[!]安装失败:不支持的系统{sys.platform}")
-            input("任意按钮返回")
-            return False
-        for dep in self.mconf.get("module", "depend").split():
-            if not os.path.isdir(binner + os.sep + "subs" + os.sep + dep):
-                ywarn(f"[!]安装失败:不满足依赖{dep}")
-                input("任意按钮返回")
-                return False
-        if os.path.exists(
-            binner + os.sep + "subs" + os.sep + self.mconf.get("module", "identifier")
-        ):
-            shutil.rmtree(
-                binner
-                + os.sep
-                + "subs"
-                + os.sep
-                + self.mconf.get("module", "identifier")
-            )
-        fz = zipfile.ZipFile(BytesIO(self.inner_zipdata), "r")
-        for file in track(self.inner_filenames, description="正在安装..."):
-            try:
-                file = str(file).encode("cp437").decode("gbk")
-            except (Exception, BaseException):
-                file = str(file).encode("utf-8").decode("utf-8")
-            fz.extract(
-                file,
-                binner
-                + os.sep
-                + "subs"
-                + os.sep
-                + self.mconf.get("module", "identifier"),
-            )
-        try:
-            depends = self.mconf.get("module", "depend")
-        except (Exception, BaseException):
-            depends = ""
-        minfo = {
-            "name": self.mconf.get("module", "name"),
-            "author": self.mconf.get("module", "author"),
-            "version": self.mconf.get("module", "version"),
-            "identifier": self.mconf.get("module", "identifier"),
-            "describe": self.mconf.get("module", "describe"),
-            "depend": depends,
-        }
-        with open(
-            binner
-            + os.sep
-            + "subs"
-            + os.sep
-            + self.mconf.get("module", "identifier")
-            + os.sep
-            + "info.json",
-            "w",
-        ) as f:
-            json.dump(minfo, f, indent=2)
-
-
-class unmpk:
-    def __init__(self, plug, name, moduledir):
-        self.arr = []
-        self.arr2 = []
-        if plug:
-            self.value = plug
-            self.value2 = name
-            self.moddir = moduledir
-            self.lfdep()
-            self.ask()
-        else:
-            ywarn("请选择插件！")
-            input("任意按钮继续")
-
-    def ask(self):
-        cls()
-        print(f"\033[31m >删除{self.value2} \033[0m\n")
-        if self.arr2:
-            print("\033[36m将会同时卸载以下插件")
-            print("\n".join(self.arr2))
-            print("\033[0m\n")
-        self.unloop() if input("确定卸载吗 [1/0]") == "1" else ysuc("取消")
-        input("任意按钮继续")
-
-    def lfdep(self, name=None):
-        if not name:
-            name = self.value
-        for i in [
-            i
-            for i in os.listdir(self.moddir)
-            if os.path.isdir(self.moddir + os.sep + i)
-        ]:
-            with open(
-                self.moddir + os.sep + i + os.sep + "info.json", "r", encoding="UTF-8"
-            ) as f:
-                data = json.load(f)
-                for n in data["depend"].split():
-                    if name == n:
-                        self.arr.append(i)
-                        self.arr2.append(data["name"])
-                        self.lfdep(i)
-                        break
-                self.arr = sorted(set(self.arr), key=self.arr.index)
-                self.arr2 = sorted(set(self.arr2), key=self.arr2.index)
-
-    def unloop(self):
-        for i in track(self.arr):
-            self.umpk(i)
-        self.umpk(self.value)
-
-    def umpk(self, name=None) -> None:
-        if name:
-            print(f"正在卸载:{name}")
-            if os.path.exists(self.moddir + os.sep + name):
-                shutil.rmtree(self.moddir + os.sep + name)
-            (
-                ywarn(f"卸载{name}失败！")
-                if os.path.exists(self.moddir + os.sep + name)
-                else yecho(f"卸载{name}成功！")
-            )
 
 
 def unpack_choo(project):
