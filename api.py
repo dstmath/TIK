@@ -3,7 +3,8 @@ import re
 import shutil
 
 
-def cls():
+def cls() -> None:
+    """clear the console"""
     if os.name == "nt":
         os.system("cls")
     elif os.name == "posix":
@@ -12,19 +13,22 @@ def cls():
         print("Ctrl + L to clear the window")
 
 
-def dir_has(path, endswith):
+def dir_has(path: str, endswith: str) -> bool:
+    """check if the directory has the file with the specified suffix"""
     for v in os.listdir(path):
         if v.endswith(endswith):
             return True
     return False
 
 
-def cat(file):
+def cat(file) -> str:
+    """read the content of the file"""
     with open(file, "r") as f:
         return f.read().strip()
 
 
-def f_remove(file):
+def f_remove(file: str) -> None:
+    """remove the file or directory"""
     if os.path.exists(file):
         if os.path.isdir(file):
             shutil.rmtree(file)
@@ -32,18 +36,28 @@ def f_remove(file):
             os.remove(file)
 
 
-def re_folder(path):
+def re_folder(path) -> None:
+    """remove the directory and recreate it"""
     f_remove(path)
     if not os.path.exists(path):
         os.makedirs(path)
 
 
 class dirsize(object):
+    """Calculate the size of the directory and adjust the size of the partition
+    :param dir: The directory to be calculated
+    :param num: The number of partitions
+    :param get: The method of partition size calculation
+    :param list_f: The file to be modified
+    :return: The size of the partition
+    """
+
     # get-command
     # 1 - retun True value of dir size
     # 2 - return Rsize value of dir size
     # 3 - return Rsize value of dir size and modify dynampic_partition_list
-    def __init__(self, dir: str, num: int = 1, get: int = 2, list_f: str = None):
+
+    def __init__(self, dir: str, num: int = 1, get: int = 2, list_f: str | None = None):
         self.rsize_v: int
         self.num = num
         self.get = get
@@ -60,7 +74,7 @@ class dirsize(object):
             )
         if self.get == 1:
             self.rsize_v = self.size
-        elif self.get in [2, 3]:
+        elif self.get in (2, 3):
             self.rsize(self.size, self.num)
         else:
             self.rsize(self.size, self.num)

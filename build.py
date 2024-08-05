@@ -13,7 +13,9 @@ with open("requirements.txt", "r", encoding="utf-8") as l:
     for i in l.read().split("\n"):
         print(f"Installing {i}")
         _main(["install", i])
+
 local = os.getcwd()
+
 if platform.system() == "Linux":
     name = "TIK-linux.zip"
 else:

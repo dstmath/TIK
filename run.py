@@ -17,8 +17,6 @@ import ext4
 from Magisk import Magisk_patch
 import os
 
-from dumper import Dumper
-
 if os.name == "nt":
     import ctypes
 
@@ -35,14 +33,10 @@ import fspatch
 import imgextractor
 import lpunpack
 import mkdtboimg
-import ofp_mtk_decrypt
-import ofp_qc_decrypt
-import ozipdecrypt
 import utils
 from api import cls, dir_has, cat, dirsize, re_folder, f_remove
 from log import LOGS, LOGE, ysuc, yecho, ywarn
 from utils import gettype, simg2img, call
-import opscrypto
 import zip2mpk
 from rich.table import Table
 from rich.console import Console
@@ -489,10 +483,9 @@ class setting:
         print(
             f"""
     \033[33m  > 工具设置 \033[0m\n
-       1>自定义首页banner \033[93m[{settings.banner}]\033[0m\n
-       2>联网模式 \033[93m[{settings.online}]\033[0m\n
-       3>Contexts修补 \033[93m[{settings.context}]\033[0m\n
-       4>检查更新 \n
+       1>联网模式 \033[93m[{settings.online}]\033[0m\n
+       2>Contexts修补 \033[93m[{settings.context}]\033[0m\n
+       3>检查更新 \n
        0>返回上级\n
        --------------------------
             """
@@ -501,18 +494,12 @@ class setting:
         if op_pro == "0":
             return
         elif op_pro == "1":
-            print(f"  首页banner: [1]TIK5 [2]镰刀斧头 [3]TIK2 [4]原神 [5]DXY [6]None")
-            banner_i = input("  请输入序号: ")
-            if banner_i.isdigit():
-                if 0 < int(banner_i) < 7:
-                    settings.change("banner", banner_i)
-        elif op_pro == "2":
             settings.change("online", "false" if settings.online == "true" else "true")
-        elif op_pro == "3":
+        elif op_pro == "2":
             settings.change(
                 "context", "false" if settings.context == "true" else "true"
             )
-        elif op_pro == "4":
+        elif op_pro == "3":
             upgrade()
         self.settings3()
 
@@ -801,7 +788,7 @@ class Tool:
         elif op_menu == "4":
             subbed(project_dir)
         elif op_menu == "5":
-            self.hczip()
+            ywarn("不支持")
         elif op_menu == "6":
             self.custom_rom()
         else:
@@ -875,8 +862,6 @@ class Tool:
             ywarn("Input Error!")
         input("任意按钮继续")
         self.magisk_patch()
-
-    def hczip(self):
         cls()
         project = LOCALDIR + os.sep + self.pro
         print(" \033[31m>打包ROM \033[0m\n")
@@ -912,12 +897,6 @@ class Tool:
                                 os.path.join(project, str(f)),
                                 os.path.join(project, "TI_out"),
                             )
-        elif chose == "2":
-            utils.dbkxyt(
-                os.path.join(project, "TI_out") + os.sep,
-                input("打包卡线一体限制机型代号:"),
-                binner + os.sep + "extra_flash.zip",
-            )
         else:
             return
         zip_file(
@@ -1257,32 +1236,6 @@ def unpack_choo(project):
     infos = {}
     ywarn(f"  请将文件放于{project}根目录下！\n")
     print(" [0]- 分解所有文件\n")
-    if dir_has(project, ".br"):
-        print("\033[33m [Br]文件\033[0m\n")
-        for br0 in os.listdir(project):
-            if br0.endswith(".br"):
-                if os.path.isfile(os.path.abspath(br0)):
-                    filen += 1
-                    print(f"   [{filen}]- {br0}\n")
-                    files[filen] = br0
-                    infos[filen] = "br"
-    if dir_has(project, ".new.dat"):
-        print("\033[33m [Dat]文件\033[0m\n")
-        for dat0 in os.listdir(project):
-            if dat0.endswith(".new.dat"):
-                if os.path.isfile(os.path.abspath(dat0)):
-                    filen += 1
-                    print(f"   [{filen}]- {dat0}\n")
-                    files[filen] = dat0
-                    infos[filen] = "dat"
-    if dir_has(project, ".new.dat.1"):
-        for dat10 in os.listdir(project):
-            if dat10.endswith(".dat.1"):
-                if os.path.isfile(os.path.abspath(dat10)):
-                    filen += 1
-                    print(f"   [{filen}]- {dat10} <分段DAT>\n")
-                    files[filen] = dat10
-                    infos[filen] = "dat.1"
     if dir_has(project, ".img"):
         print("\033[33m [Img]文件\033[0m\n")
         for img0 in os.listdir(project):
@@ -1297,64 +1250,6 @@ def unpack_choo(project):
                     )
                     files[filen] = img0
                     infos[filen] = "img" if info != "sparse" else "sparse"
-    if dir_has(project, ".bin"):
-        for bin0 in os.listdir(project):
-            if bin0.endswith(".bin"):
-                if (
-                    os.path.isfile(os.path.abspath(bin0))
-                    and gettype(os.path.abspath(bin0)) == "payload"
-                ):
-                    filen += 1
-                    print(f"   [{filen}]- {bin0} <BIN>\n")
-                    files[filen] = bin0
-                    infos[filen] = "payload"
-    if dir_has(project, ".ozip"):
-        print("\033[33m [Ozip]文件\033[0m\n")
-        for ozip0 in os.listdir(project):
-            if ozip0.endswith(".ozip"):
-                if (
-                    os.path.isfile(os.path.abspath(ozip0))
-                    and gettype(os.path.abspath(ozip0)) == "ozip"
-                ):
-                    filen += 1
-                    print(f"   [{filen}]- {ozip0}\n")
-                    files[filen] = ozip0
-                    infos[filen] = "ozip"
-    if dir_has(project, ".ofp"):
-        print("\033[33m [Ofp]文件\033[0m\n")
-        for ofp0 in os.listdir(project):
-            if ofp0.endswith(".ofp"):
-                if os.path.isfile(os.path.abspath(ofp0)):
-                    filen += 1
-                    print(f"   [{filen}]- {ofp0}\n")
-                    files[filen] = ofp0
-                    infos[filen] = "ofp"
-    if dir_has(project, ".ops"):
-        print("\033[33m [Ops]文件\033[0m\n")
-        for ops0 in os.listdir(project):
-            if ops0.endswith(".ops"):
-                if os.path.isfile(os.path.abspath(ops0)):
-                    filen += 1
-                    print(f"   [{filen}]- {ops0}\n")
-                    files[filen] = ops0
-                    infos[filen] = "ops"
-    if dir_has(project, ".win"):
-        print("\033[33m [Win]文件\033[0m\n")
-        for win0 in os.listdir(project):
-            if win0.endswith(".win"):
-                if os.path.isfile(os.path.abspath(win0)):
-                    filen += 1
-                    print(f"   [{filen}]- {win0} <WIN> \n")
-                    files[filen] = win0
-                    infos[filen] = "win"
-    if dir_has(project, ".win000"):
-        for win0000 in os.listdir(project):
-            if win0000.endswith(".win000"):
-                if os.path.isfile(os.path.abspath(win0000)):
-                    filen += 1
-                    print(f"   [{filen}]- {win0000} <分段WIN> \n")
-                    files[filen] = win0000
-                    infos[filen] = "win000"
     if dir_has(project, ".dtb"):
         print("\033[33m [Dtb]文件\033[0m\n")
         for dtb0 in os.listdir(project):
@@ -1444,11 +1339,9 @@ def packChoo(project):
         print("  --------------------------------------")
         filed = input("  请输入对应序号：")
         if filed == "0":
-            op_menu = input("  输出文件格式[1]br [2]dat [3]img:")
+            op_menu = input("  输出文件格式[1]img:")
             if op_menu == "1":
-                form = "br"
-            elif op_menu == "2":
-                form = "dat"
+                form = "img"
             else:
                 form = "img"
             if settings.diyimgtype == "1":
@@ -2044,110 +1937,6 @@ def insuper(Imgdir, outputimg, ssize, stype, sparsev, isreadonly):
     )
 
 
-def packpayload(project):
-    if ostype != "Linux":
-        print(f"不支持当前系统:{ostype},目前只支持:Linux(aarch64&x86)")
-        input("任意按钮继续")
-        return
-    if os.path.exists(project + os.sep + "payload"):
-        if input("发现之前打包Payload残留，清空吗[1/0]") == "1":
-            re_folder(project + os.sep + "payload")
-            re_folder(project + os.sep + "TI_out" + os.sep + "payload")
-            f_remove(
-                project
-                + os.sep
-                + "TI_out"
-                + os.sep
-                + "payload"
-                + os.sep
-                + "dynamic_partitions_info.txt"
-            )
-    else:
-        os.makedirs(project + os.sep + "payload")
-    ywarn(f"请将所有分区镜像放置于{project + os.sep}payload中！")
-    yecho("这项功能很耗时、很费CPU、很费内存，若无官方签名则意义不大，请考虑后使用")
-    if not os.listdir(project + os.sep + "payload"):
-        print("您似乎没有要打包的分区，要移动下列分区打包吗：")
-        move_list = []
-        for i in os.listdir(project + os.sep + "TI_out"):
-            if os.path.isfile(os.path.join(project + os.sep + "TI_out", i)):
-                if i.endswith(".img"):
-                    move_list.append(i)
-        print("\n".join(move_list))
-        if input("确定操作吗[Y/N]") in ["Y", "y", "1"]:
-            for i in move_list:
-                shutil.move(
-                    os.path.join(project + os.sep + "TI_out", i),
-                    os.path.join(project + os.sep + "payload", i),
-                )
-    tool_auto_size = (
-        sum(
-            [
-                os.path.getsize(os.path.join(project + os.sep + "payload", p))
-                for p in os.listdir(project + os.sep + "payload")
-                if os.path.isfile(os.path.join(project + os.sep + "payload", p))
-            ]
-        )
-        + 409600
-    )
-    tool_auto_size = versize(tool_auto_size)
-    checkssize = input(
-        f"请设置构建Super.img大小:[1]9126805504 [2]10200547328 [3]工具推荐：{tool_auto_size} [5]自定义"
-    )
-    if checkssize == "1":
-        supersize = 9126805504
-    elif checkssize == "2":
-        supersize = 10200547328
-    elif checkssize == "3":
-        supersize = tool_auto_size
-    else:
-        supersize = input("请输入super分区大小（字节数）： ")
-    yecho(f"打包到{project}/TI_out/payload...")
-    inpayload(supersize, project)
-
-
-def inpayload(supersize, project):
-    yecho("将打包至：TI_out/payload，payload.bin & payload_properties.txt")
-    partname = []
-    super_list = []
-    pimages = []
-    out = project + os.sep + "TI_out" + os.sep + "payload" + os.sep + "payload.bin"
-    for sf in os.listdir(project + os.sep + "payload"):
-        if sf.endswith(".img"):
-            partname.append(sf.replace(".img", ""))
-            if gettype(project + os.sep + "payload" + os.sep + sf) in ["ext", "erofs"]:
-                super_list.append(sf.replace(".img", ""))
-            pimages.append(f"{project}{os.sep}payload{os.sep}{sf}")
-            yecho(f"预打包:{sf}")
-    inparts = (
-        f"--partition_names={':'.join(partname)} --new_partitions={':'.join(pimages)}"
-    )
-    yecho(f"当前Super逻辑分区表：{super_list}")
-    with open(
-        project + os.sep + "payload" + os.sep + "parts_info.txt",
-        "w",
-        encoding="utf-8",
-        newline="\n",
-    ) as txt:
-        txt.write(f"super_partition_groups={settings.super_group}\n")
-        txt.write(f"qti_dynamic_partitions_size={supersize}\n")
-        txt.write(f"qti_dynamic_partitions_partition_list={' '.join(super_list)}\n")
-    os.system(
-        f"{ebinner}delta_generator --out_file={out} {inparts} --dynamic_partition_info_file={os.path.join(project, 'payload', 'parts_info.txt')}"
-    )
-    if not os.path.exists(out):
-        input("错误 ，未写入文件")
-    else:
-        (
-            LOGS("成功创建payload!")
-            if call(
-                f"delta_generator --in_file={out} --properties_file={project + os.sep + 'config' + os.sep}payload_properties.txt"
-            )
-            == 0
-            else LOGE("创建payload失败！")
-        )
-
-
 def unpack(file, info, project):
     if not os.path.exists(file):
         file = os.path.join(project, file)
@@ -2161,93 +1950,11 @@ def unpack(file, info, project):
         unpack(file, gettype(file), project)
     elif info == "dtbo":
         undtbo(project, os.path.abspath(file))
-    elif info == "br":
-        call(f"brotli -dj {file}")
-        partname = str(os.path.basename(file).replace(".new.dat.br", ""))
-        filepath = str(os.path.dirname(file))
-        unpack(os.path.join(filepath, partname + ".new.dat"), "dat", project)
     elif info == "dtb":
         undtb(project, os.path.abspath(file))
-    elif info == "dat":
-        partname = str(os.path.basename(file).replace(".new.dat", ""))
-        filepath = str(os.path.dirname(file))
-        version = utils.sdat2img(
-            os.path.join(filepath, partname + ".transfer.list"),
-            os.path.join(filepath, partname + ".new.dat"),
-            os.path.join(filepath, partname + ".img"),
-        ).version
-        parts["dat_ver"] = version
-        try:
-            os.remove(os.path.join(filepath, partname + ".new.dat"))
-            os.remove(os.path.join(filepath, partname + ".transfer.list"))
-            os.remove(os.path.join(filepath, partname + ".patch.dat"))
-        except (Exception, BaseException):
-            ...
-        unpack(
-            os.path.join(filepath, partname + ".img"),
-            gettype(os.path.join(filepath, partname + ".img")),
-            project,
-        )
     elif info == "img":
         parts[os.path.basename(file).split(".")[0]] = gettype(file)
         unpack(file, gettype(file), project)
-    elif info == "ofp":
-        ofpm = input(" ROM机型处理器为？[1]高通 [2]MTK	")
-        if ofpm == "1":
-            ofp_qc_decrypt.main(file, project)
-        elif ofpm == "2":
-            ofp_mtk_decrypt.main(file, project)
-    elif info == "ozip":
-        ozipdecrypt.main(file)
-        try:
-            os.remove(file)
-        except Exception as e:
-            print(f"错误！{e}")
-        zipfile.ZipFile(file.replace(".ozip", ".zip")).extractall(project)
-    elif info == "ops":
-        args = {
-            "decrypt": True,
-            "<filename>": file,
-            "outdir": os.path.join(project, os.path.dirname(file).split(".")[0]),
-        }
-        opscrypto.main(args)
-    elif info == "payload":
-        yecho(f"{os.path.basename(file)}所含分区列表：")
-        with open(file, "rb") as pay:
-            print(
-                f"{(parts_ := [i.partition_name for i in utils.payload_reader(pay).partitions])}"
-            )
-        extp = input("请输入需要解压的分区名(空格隔开)/all[全部]	")
-        if extp == "all":
-            Dumper(file, project, diff=False, old="old", images=parts_).run()
-        else:
-            Dumper(
-                file, project, diff=False, old="old", images=[p for p in extp.split()]
-            ).run()
-    elif info == "win000":
-        for fd in [f for f in os.listdir(project) if re.search(r"\.win\d+", f)]:
-            with open(project + os.path.basename(fd).rsplit(".", 1)[0], "ab") as ofd:
-                for fd1 in sorted(
-                    [
-                        f
-                        for f in os.listdir(project)
-                        if f.startswith(os.path.basename(fd).rsplit(".", 1)[0] + ".")
-                    ],
-                    key=lambda x: int(x.rsplit(".")[3]),
-                ):
-                    print("合并%s到%s" % (fd1, os.path.basename(fd).rsplit(".", 1)[0]))
-                    with open(project + os.sep + fd1, "rb") as nfd:
-                        ofd.write(nfd.read())
-                    os.remove(project + os.sep + fd1)
-        filepath = os.path.dirname(file)
-        unpack(
-            os.path.join(filepath, file), gettype(os.path.join(filepath, file)), project
-        )
-    elif info == "win":
-        filepath = os.path.dirname(file)
-        unpack(
-            os.path.join(filepath, file), gettype(os.path.join(filepath, file)), project
-        )
     elif info == "ext":
         with open(file, "rb+") as e:
             mount = ext4.Volume(e).get_mount_point
@@ -2266,35 +1973,6 @@ def unpack(file, info, project):
             os.remove(file)
         except (Exception, BaseException):
             ...
-    elif info == "dat.1":
-        for fd in [f for f in os.listdir(project) if re.search(r"\.new\.dat\.\d+", f)]:
-            with open(
-                project + os.sep + os.path.basename(fd).rsplit(".", 1)[0], "ab"
-            ) as ofd:
-                for fd1 in sorted(
-                    [
-                        f
-                        for f in os.listdir(project)
-                        if f.startswith(os.path.basename(fd).rsplit(".", 1)[0] + ".")
-                    ],
-                    key=lambda x: int(x.rsplit(".")[3]),
-                ):
-                    print("合并%s到%s" % (fd1, os.path.basename(fd).rsplit(".", 1)[0]))
-                    with open(project + os.sep + fd1, "rb") as nfd:
-                        ofd.write(nfd.read())
-                    os.remove(project + os.sep + fd1)
-        partname = str(os.path.basename(file).replace(".new.dat.1", ""))
-        filepath = str(os.path.dirname(file))
-        utils.sdat2img(
-            os.path.join(filepath, partname + ".transfer.list"),
-            os.path.join(filepath, partname + ".new.dat"),
-            os.path.join(filepath, partname + ".img"),
-        )
-        unpack(
-            os.path.join(filepath, partname + ".img"),
-            gettype(os.path.join(filepath, partname + ".img")),
-            project,
-        )
     elif info == "erofs":
         call(f"extract.erofs -i {os.path.abspath(file)} -o {project} -x")
     elif info == "f2fs" and os.name == "posix":
@@ -2328,36 +2006,6 @@ def unpack(file, info, project):
 def autounpack(project):
     yecho("自动解包开始！")
     os.chdir(project)
-    if os.path.exists(project + os.sep + "payload.bin"):
-        yecho("解包 payload.bin...")
-        unpack(project + os.sep + "payload.bin", "payload", project)
-        yecho("解包完成！")
-        wastes = ["care_map.pb", "apex_info.pb"]
-        if input("你要删除payload吗[1/0]") == "1":
-            wastes.append("payload.bin")
-        for waste in wastes:
-            if os.path.exists(project + os.sep + waste):
-                try:
-                    os.remove(project + os.sep + waste)
-                except (Exception, BaseException):
-                    ...
-        if not os.path.isdir(project + os.sep + "config"):
-            os.makedirs(project + os.sep + "config")
-        shutil.move(
-            project + os.sep + "payload_properties.txt", project + os.sep + "config"
-        )
-        shutil.move(
-            project
-            + os.sep
-            + "META-INF"
-            + os.sep
-            + "com"
-            + os.sep
-            + "android"
-            + os.sep
-            + "metadata",
-            project + os.sep + "config",
-        )
     ask_ = input("解包所有文件？[1/0]")
     for infile in os.listdir(project):
         os.chdir(project)
@@ -2374,13 +2022,7 @@ def autounpack(project):
         if ask_ != "1":
             if not input(f"要分解{infile}吗 [1/0]") == "1":
                 continue
-        if infile.endswith(".new.dat.br"):
-            unpack(os.path.abspath(infile), "br", project)
-        elif infile.endswith(".dat.1"):
-            unpack(os.path.abspath(infile), "dat.1", project)
-        elif infile.endswith(".new.dat"):
-            unpack(os.path.abspath(infile), "dat", project)
-        elif infile.endswith(".img"):
+        if infile.endswith(".img"):
             unpack(os.path.abspath(infile), "img", project)
 
 
