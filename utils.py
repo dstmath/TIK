@@ -111,6 +111,7 @@ formats = (
     [b"\x28\xb5\x2f\xfd", "zstd"],
 )
 
+
 def gettype(file) -> str:
     if not os.path.exists(file):
         return "fne"
@@ -268,22 +269,6 @@ def simg2img(path):
         print(e)
 
 
-def img2sdat(input_image, out_dir=".", version=None, prefix="system"):
-    print("img2sdat binary - version: %s\n" % 1.7)
-    if not os.path.isdir(out_dir):
-        os.makedirs(out_dir)
-        """            
-        1. Android Lollipop 5.0
-        2. Android Lollipop 5.1
-        3. Android Marshmallow 6.0
-        4. Android Nougat 7.0/7.1/8.0/8.1
-        """
-
-    blockimgdiff.BlockImageDiff(
-        sparse_img.SparseImage(input_image, tempfile.mkstemp()[1], "0"), None, version
-    ).Compute(out_dir + "/" + prefix)
-
-
 def findfile(file, dir_) -> str:
     for root, dirs, files in os.walk(dir_, topdown=True):
         if file in files:
@@ -356,102 +341,3 @@ class vbpatch:
 
     def disavb(self):
         self.patchvb(b"\x02")
-
-
-class DUMPCFG:
-    blksz = 0x1 << 0xC
-    headoff = 0x4000
-    magic = b"LOGO!!!!"
-    imgnum = 0
-    imgblkoffs = []
-    imgblkszs = []
-
-
-class BMPHEAD(object):
-    def __init__(
-        self, buf: bytes = None
-    ):  # Read bytes buf and use this struct to parse
-        assert buf is not None, f"buf Should be bytes not {type(buf)}"
-        # print(buf)
-        self.structstr = "<H6I"
-        (
-            self.magic,
-            self.fsize,
-            self.reserved,
-            self.hsize,
-            self.dib,
-            self.width,
-            self.height,
-        ) = struct.unpack(self.structstr, buf)
-
-
-class XIAOMI_BLKSTRUCT(object):
-    def __init__(self, buf: bytes):
-        self.structstr = "2I"
-        (
-            self.imgoff,
-            self.blksz,
-        ) = struct.unpack(self.structstr, buf)
-
-
-class LOGODUMPER(object):
-    def __init__(self, img: str, out: str, dir__: str = "pic"):
-        self.out = out
-        self.img = img
-        self.dir = dir__
-        self.structstr = "<8s"
-        self.cfg = DUMPCFG()
-        self.chkimg(img)
-
-    def chkimg(self, img: str):
-        assert os.access(img, os.F_OK), f"{img} does not found!"
-        with open(img, "rb") as f:
-            f.seek(self.cfg.headoff, 0)
-            self.magic = struct.unpack(
-                self.structstr, f.read(struct.calcsize(self.structstr))
-            )[0]
-            while True:
-                m = XIAOMI_BLKSTRUCT(f.read(8))
-                if m.imgoff != 0:
-                    self.cfg.imgblkszs.append(m.blksz << 0xC)
-                    self.cfg.imgblkoffs.append(m.imgoff << 0xC)
-                    self.cfg.imgnum += 1
-                else:
-                    break
-        # print(self.magic)
-        assert self.magic == b"LOGO!!!!", "File does not match xiaomi logo magic!"
-        print("Xiaomi LOGO!!!! format check pass!")
-
-    def unpack(self):
-        with open(self.img, "rb") as f:
-            print("Unpack:\n" "BMP\tSize\tWidth\tHeight")
-            for i in range(self.cfg.imgnum):
-                f.seek(self.cfg.imgblkoffs[i], 0)
-                bmph = BMPHEAD(f.read(26))
-                f.seek(self.cfg.imgblkoffs[i], 0)
-                print("%d\t%d\t%d\t%d" % (i, bmph.fsize, bmph.width, bmph.height))
-                with open(os.path.join(self.out, "%d.bmp" % i), "wb") as o:
-                    o.write(f.read(bmph.fsize))
-            print("\tDone!")
-
-    def repack(self):
-        with open(self.out, "wb") as o:
-            off = 0x5
-            for i in range(self.cfg.imgnum):
-                print("Write BMP [%d.bmp] at offset 0x%X" % (i, off << 0xC))
-                with open(os.path.join(self.dir, "%d.bmp" % i), "rb") as b:
-                    bhead = BMPHEAD(b.read(26))
-                    b.seek(0, 0)
-                    self.cfg.imgblkszs[i] = (bhead.fsize >> 0xC) + 1
-                    self.cfg.imgblkoffs[i] = off
-
-                    o.seek(off << 0xC)
-                    o.write(b.read(bhead.fsize))
-
-                    off += self.cfg.imgblkszs[i]
-            o.seek(self.cfg.headoff)
-            o.write(self.magic)
-            for i in range(self.cfg.imgnum):
-                o.write(struct.pack("<I", self.cfg.imgblkoffs[i]))
-                o.write(struct.pack("<I", self.cfg.imgblkszs[i]))
-            print("\tDone!")
