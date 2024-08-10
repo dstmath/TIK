@@ -839,13 +839,17 @@ class Tool:
             f"{LOCALDIR}{os.sep}bin{os.sep}Linux{os.sep}x86_64{os.sep}magiskboot"
         )
 
+        ksud_path = (
+            f"{LOCALDIR}{os.sep}bin{os.sep}Linux{os.sep}x86_64{os.sep}ksud"
+        )
+
         if op_menu in boots.keys():
             kmi = {1: "android13-5.15", 2: "android14-5.15", 3: "android14-6.1"}
             for i in kmi.keys():
                 print(f"{i}: {kmi[i]}")
             kmi_choice = int(input("\033[33m请选择内核镜像需要的kmi\033: [0m"))
             os.system(
-                f"ksud boot-patch -b {boots[op_menu]} --magiskboot {magiskboot_path} --kmi={kmi.get(kmi_choice)} --out {project}"
+                f"{ksud_path} boot-patch -b {boots[op_menu]} --magiskboot {magiskboot_path} --kmi={kmi.get(kmi_choice)} --out {project}"
             )
 
         elif op_menu == "00":
