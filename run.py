@@ -9,8 +9,6 @@ import sys
 import time
 import zipfile
 from argparse import Namespace
-from configparser import ConfigParser
-from io import BytesIO
 from os import path as o_path
 import banner
 import ext4
@@ -34,7 +32,7 @@ import imgextractor
 import lpunpack
 import mkdtboimg
 import utils
-from api import cls, dir_has, cat, dirsize, re_folder, f_remove
+from api import cls, dir_has, cat, dirsize
 from log import LOGS, LOGE, ysuc, yecho, ywarn
 from utils import gettype, simg2img, call
 from rich.table import Table
@@ -52,7 +50,7 @@ ebinner = o_path.join(binner, ostype, platform) + os.sep
 temp = o_path.join(binner, "temp")
 
 
-class json_edit:
+class JsonEdit:
     def __init__(self, j_f):
         self.file = j_f
 
@@ -171,7 +169,7 @@ except (Exception, BaseException):
     ...
 
 
-class set_utils:
+class SetUtils:
     def __init__(self, path):
         self.path = path
 
@@ -189,11 +187,11 @@ class set_utils:
         self.load_set()
 
 
-settings = set_utils(setfile)
+settings = SetUtils(setfile)
 settings.load_set()
 
 
-class upgrade:
+class Upgrade:
     update_json = "https://mirror.ghproxy.com/https://raw.githubusercontent.com/ColdWindScholar/Upgrade/main/TIK.json"
 
     def __init__(self):
@@ -249,8 +247,8 @@ class upgrade:
                     except (Exception, BaseException):
                         input("更新文件损坏， 无法更新")
                         return
-                    self.settings = json_edit(setfile).read()
-                    json2 = json_edit(
+                    self.settings = JsonEdit(setfile).read()
+                    json2 = JsonEdit(
                         os.path.join(extract_path, "bin", "settings.json")
                     ).read()
                     for i in self.settings.keys():
@@ -277,7 +275,7 @@ class upgrade:
                         os.path.join(LOCALDIR, "bin2"), os.path.join(LOCALDIR, "bin")
                     )
                     shutil.rmtree(os.path.join(LOCALDIR, "bin2"))
-                    json_edit(setfile).write(json2)
+                    JsonEdit(setfile).write(json2)
                     input("更新完毕, 任意按钮启动新程序...")
                     subprocess.Popen(
                         [
@@ -293,7 +291,7 @@ class upgrade:
                 return
 
 
-class setting:
+class Setting:
     def settings1(self):
         actions = {
             "1": lambda: settings.change(
@@ -301,11 +299,11 @@ class setting:
                 (
                     brcom
                     if (
-                        brcom := input(
-                            f"  调整brotli压缩等级(整数1-9，级别越高，压缩率越大，耗时越长):"
-                        )
-                    ).isdigit()
-                    and 0 < int(brcom) < 10
+                           brcom := input(
+                               f"  调整brotli压缩等级(整数1-9，级别越高，压缩率越大，耗时越长):"
+                           )
+                       ).isdigit()
+                       and 0 < int(brcom) < 10
                     else "1"
                 ),
             ),
@@ -326,7 +324,7 @@ class setting:
                 (
                     "1"
                     if input("  Img是否打包为sparse镜像(压缩体积)[1/0]\n  请输入序号:")
-                    == "1"
+                       == "1"
                     else "0"
                 ),
             ),
@@ -499,7 +497,7 @@ class setting:
                 "context", "false" if settings.context == "true" else "true"
             )
         elif op_pro == "3":
-            upgrade()
+            Upgrade()
         self.settings3()
 
     @staticmethod
@@ -549,7 +547,7 @@ class setting:
 
 
 def plug_parse(js_on):
-    class parse:
+    class Parse:
         gavs = {}
 
         def __init__(self, jsons):
@@ -612,7 +610,7 @@ def plug_parse(js_on):
                             else:
                                 print("不支持的解析:%s" % con["type"])
 
-    data = parse(js_on)
+    data = Parse(js_on)
     return data.gavs, data.value
 
 
@@ -689,7 +687,7 @@ class Tool:
             ysuc("\n感谢使用TI-KITCHEN5,再见！")
             sys.exit(0)
         elif op_pro == "77":
-            setting()
+            Setting()
         elif op_pro.isdigit():
             if op_pro in projects.keys():
                 self.pro = projects[op_pro]
@@ -765,6 +763,7 @@ class Tool:
             os.makedirs(project_dir + os.sep + "TI_out")
         print("\033[33m    0> 回到主页     2> 解包菜单\033[0m\n")
         print("\033[33m    3> 打包菜单     4> 定制功能\033[0m\n")
+        print("\033[33m    88> 退出\033[0m\n")
         op_menu = input("    请输入编号: ")
         if op_menu == "0":
             os.chdir(LOCALDIR)
@@ -772,9 +771,13 @@ class Tool:
         elif op_menu == "2":
             unpack_choo(project_dir)
         elif op_menu == "3":
-            packChoo(project_dir)
+            pack_choo(project_dir)
         elif op_menu == "4":
             self.custom_rom()
+        elif op_menu == "88":
+            cls()
+            ysuc("\n感谢使用TI-KITCHEN5,再见！")
+            sys.exit(0)
         else:
             ywarn("   Input error!")
             input("任意按钮继续")
@@ -811,9 +814,47 @@ class Tool:
         input("任意按钮继续")
         self.custom_rom()
 
-    def ksu_patch(self): ...
+    def ksu_patch(self):
+        cls()
+        cs = 0
+        project = LOCALDIR + os.sep + self.pro
+        os.chdir(LOCALDIR)
+        print(" \n\033[31m>ksu修补 \033[0m\n")
+        print(f"  项目：{self.pro}\n")
+        print(f"  请将要修补的镜像放入{project}")
 
-    def apatch_patch(self): ...
+        boots = {}
+        for i in os.listdir(project):
+            if os.path.isdir(os.path.join(project, i)):
+                continue
+            if gettype(os.path.join(project, i)) in ["boot", "init_boot"]:
+                cs += 1
+                boots[str(cs)] = os.path.join(project, i)
+                print(f"  [{cs}]--{i}")
+        print("\033[33m-------------------------------\033[0m")
+        print("\033[33m    [00] 返回\033[0m\n")
+        op_menu = input("    请输入编号: ")
+
+        magiskboot_path = f"{LOCALDIR}{os.sep}bin{os.sep}Linux{os.sep}x86_64{os.sep}magiskboot"
+
+        if op_menu in boots.keys():
+            kmi = {1: "android13-5.15", 2: "android14-5.15", 3: "android14-6.1"}
+            for i in kmi.keys():
+                print(f"{i}: {kmi[i]}")
+            kmi_choice = int(input("\033[33m请选择内核镜像需要的kmi\033: [0m"))
+            os.system(
+                f"ksud boot-patch -b {boots[op_menu]} --magiskboot {magiskboot_path} --kmi={kmi.get(kmi_choice)} --out {project}")
+
+        elif op_menu == "00":
+            os.chdir(project)
+            return
+        else:
+            ywarn("Input Error!")
+        input("任意按钮继续")
+        self.project()
+
+    def apatch_patch(self):
+        ...
 
     def magisk_patch(self):
         cls()
@@ -892,7 +933,7 @@ class Tool:
                             )
         else:
             return
-        zip_file(
+        ZipFile(
             os.path.basename(project) + ".zip",
             project + os.sep + "TI_out",
             project + os.sep,
@@ -952,7 +993,7 @@ def get_all_file_paths(directory) -> Ellipsis:
             yield os.path.join(root, filename)
 
 
-class zip_file:
+class ZipFile:
     def __init__(self, file, dst_dir, local, path=None):
         if not path:
             path = LOCALDIR + os.sep
@@ -1054,13 +1095,13 @@ def unpack_choo(project):
     unpack_choo(project)
 
 
-def packChoo(project):
+def pack_choo(project):
     cls()
     print(" \033[31m >打包 \033[0m\n")
     partn = 0
     parts = {}
     types = {}
-    json_ = json_edit(project + os.sep + "config" + os.sep + "parts_info").read()
+    json_ = JsonEdit(project + os.sep + "config" + os.sep + "parts_info").read()
     if not os.path.exists(project + os.sep + "config"):
         os.makedirs(project + os.sep + "config")
     if project:
@@ -1171,8 +1212,6 @@ def packChoo(project):
                     inpacker(parts[f], project, form, imgtype, json_)
         elif filed == "66":
             packsuper(project)
-        elif filed == "77":
-            packpayload(project)
         elif filed == "00":
             return
         elif filed.isdigit():
@@ -1222,7 +1261,7 @@ def packChoo(project):
         else:
             ywarn("Input error!")
         input("任意按钮继续")
-        packChoo(project)
+        pack_choo(project)
 
 
 def dboot(infile, orig):
@@ -1241,7 +1280,7 @@ def dboot(infile, orig):
         ).replace("\\", "/")
         call(
             exe='busybox ash -c "find | sed 1d | %s -H newc -R 0:0 -o -F ../ramdisk-new.cpio"'
-            % cpio,
+                % cpio,
             sp=1,
             shstate=True,
         )
@@ -1505,21 +1544,16 @@ def inpacker(name, project, form, ftype, json_=None):
         )
     else:
         if os.path.exists(file_contexts):
-            if settings.pack_e2 == "0":
-                call(
-                    f"make_ext4fs -J -T {utc} -S {file_contexts} -l {img_size0} -C {fs_config} -L {name} -a {name} {out_img} {in_files}"
-                )
-            else:
-                call(
-                    f"mke2fs -O ^has_journal -L {name} -I 256 -M /{name} -m 0 -t ext4 -b {settings.BLOCKSIZE} {out_img} {size}"
-                )
-                call(
-                    f"e2fsdroid -e -T {utc} -S {file_contexts} -C {fs_config} -a /{name} -f {in_files} {out_img}"
-                )
-        else:
             call(
-                f"make_ext4fs -J -T {utc} -l {img_size0} -C {fs_config} -L {name} -a {name} {out_img} {in_files}"
+                f"mke2fs -O ^has_journal -L {name} -I 256 -M /{name} -m 0 -t ext4 -b {settings.BLOCKSIZE} {out_img} {size}"
             )
+            call(
+                f"e2fsdroid -e -T {utc} -S {file_contexts} -C {fs_config} -a /{name} -f {in_files} {out_img}"
+            )
+        else:
+            ywarn("Miss file_contexts")
+            sys.exit(1)
+
     if settings.pack_sparse == "1" or form in ["dat", "br"]:
         call(f"img2simg {out_img} {out_img}.s")
         os.remove(out_img)
@@ -1623,11 +1657,11 @@ def packsuper(project):
     )
 
 
-def insuper(Imgdir, outputimg, ssize, stype, sparsev, isreadonly):
+def insuper(imgdir, outputimg, ssize, stype, sparsev, isreadonly):
     attr = "readonly" if isreadonly == "1" else "none"
     group_size_a = 0
     group_size_b = 0
-    for root, dirs, files in os.walk(Imgdir):
+    for root, dirs, files in os.walk(imgdir):
         for file in files:
             file_path = os.path.join(root, file)
             if os.path.isfile(file_path) and os.path.getsize(file_path) == 0:
@@ -1640,7 +1674,7 @@ def insuper(Imgdir, outputimg, ssize, stype, sparsev, isreadonly):
     if stype == "VAB":
         superpa += "--virtual-ab "
     superpa += f"-block-size={settings.SBLOCKSIZE} "
-    for imag in os.listdir(Imgdir):
+    for imag in os.listdir(imgdir):
         if imag.endswith(".img"):
             image = imag.replace("_a.img", "").replace("_b.img", "").replace(".img", "")
             if (
@@ -1649,37 +1683,37 @@ def insuper(Imgdir, outputimg, ssize, stype, sparsev, isreadonly):
             ):
                 if stype in ["VAB", "AB"]:
                     if os.path.isfile(
-                        Imgdir + os.sep + image + "_a.img"
-                    ) and os.path.isfile(Imgdir + os.sep + image + "_b.img"):
-                        img_sizea = os.path.getsize(Imgdir + os.sep + image + "_a.img")
-                        img_sizeb = os.path.getsize(Imgdir + os.sep + image + "_b.img")
+                        imgdir + os.sep + image + "_a.img"
+                    ) and os.path.isfile(imgdir + os.sep + image + "_b.img"):
+                        img_sizea = os.path.getsize(imgdir + os.sep + image + "_a.img")
+                        img_sizeb = os.path.getsize(imgdir + os.sep + image + "_b.img")
                         group_size_a += img_sizea
                         group_size_b += img_sizeb
-                        superpa += f"--partition {image}_a:{attr}:{img_sizea}:{settings.super_group}_a --image {image}_a={Imgdir}{os.sep}{image}_a.img --partition {image}_b:{attr}:{img_sizeb}:{settings.super_group}_b --image {image}_b={Imgdir}{os.sep}{image}_b.img "
+                        superpa += f"--partition {image}_a:{attr}:{img_sizea}:{settings.super_group}_a --image {image}_a={imgdir}{os.sep}{image}_a.img --partition {image}_b:{attr}:{img_sizeb}:{settings.super_group}_b --image {image}_b={imgdir}{os.sep}{image}_b.img "
                     else:
                         if not os.path.exists(
-                            Imgdir + os.sep + image + ".img"
-                        ) and os.path.exists(Imgdir + os.sep + image + "_a.img"):
+                            imgdir + os.sep + image + ".img"
+                        ) and os.path.exists(imgdir + os.sep + image + "_a.img"):
                             os.rename(
-                                Imgdir + os.sep + image + "_a.img",
-                                Imgdir + os.sep + image + ".img",
+                                imgdir + os.sep + image + "_a.img",
+                                imgdir + os.sep + image + ".img",
                             )
 
-                        img_size = os.path.getsize(Imgdir + os.sep + image + ".img")
+                        img_size = os.path.getsize(imgdir + os.sep + image + ".img")
                         group_size_a += img_size
                         group_size_b += img_size
-                        superpa += f"--partition {image}_a:{attr}:{img_size}:{settings.super_group}_a --image {image}_a={Imgdir}{os.sep}{image}.img --partition {image}_b:{attr}:0:{settings.super_group}_b "
+                        superpa += f"--partition {image}_a:{attr}:{img_size}:{settings.super_group}_a --image {image}_a={imgdir}{os.sep}{image}.img --partition {image}_b:{attr}:0:{settings.super_group}_b "
                 else:
                     if not os.path.exists(
-                        Imgdir + os.sep + image + ".img"
-                    ) and os.path.exists(Imgdir + os.sep + image + "_a.img"):
+                        imgdir + os.sep + image + ".img"
+                    ) and os.path.exists(imgdir + os.sep + image + "_a.img"):
                         os.rename(
-                            Imgdir + os.sep + image + "_a.img",
-                            Imgdir + os.sep + image + ".img",
+                            imgdir + os.sep + image + "_a.img",
+                            imgdir + os.sep + image + ".img",
                         )
 
-                    img_size = os.path.getsize(Imgdir + os.sep + image + ".img")
-                    superpa += f"--partition {image}:{attr}:{img_size}:{settings.super_group} --image {image}={Imgdir}{os.sep}{image}.img "
+                    img_size = os.path.getsize(imgdir + os.sep + image + ".img")
+                    superpa += f"--partition {image}:{attr}:{img_size}:{settings.super_group} --image {image}={imgdir}{os.sep}{image}.img "
                     group_size_a += img_size
                 print(f"已添加分区:{image}")
     supersize = ssize
@@ -1704,7 +1738,7 @@ def insuper(Imgdir, outputimg, ssize, stype, sparsev, isreadonly):
 def unpack(file, info, project):
     if not os.path.exists(file):
         file = os.path.join(project, file)
-    json_ = json_edit(os.path.join(project, "config", "parts_info"))
+    json_ = JsonEdit(os.path.join(project, "config", "parts_info"))
     parts = json_.read()
     if not os.path.exists(project + os.sep + "config"):
         os.makedirs(project + os.sep + "config")
