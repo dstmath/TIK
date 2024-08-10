@@ -299,11 +299,11 @@ class Setting:
                 (
                     brcom
                     if (
-                           brcom := input(
-                               f"  调整brotli压缩等级(整数1-9，级别越高，压缩率越大，耗时越长):"
-                           )
-                       ).isdigit()
-                       and 0 < int(brcom) < 10
+                        brcom := input(
+                            f"  调整brotli压缩等级(整数1-9，级别越高，压缩率越大，耗时越长):"
+                        )
+                    ).isdigit()
+                    and 0 < int(brcom) < 10
                     else "1"
                 ),
             ),
@@ -324,7 +324,7 @@ class Setting:
                 (
                     "1"
                     if input("  Img是否打包为sparse镜像(压缩体积)[1/0]\n  请输入序号:")
-                       == "1"
+                    == "1"
                     else "0"
                 ),
             ),
@@ -651,7 +651,7 @@ class Tool:
         print(" >\033[33m 项目列表 \033[0m\n")
         print("\033[31m   [00]  删除项目\033[0m\n\n", "  [0]  新建项目\n")
         for pros in os.listdir(LOCALDIR):
-            if pros == "bin" or pros.startswith("."):
+            if pros == "bin" or pros == "ksu-drivers" or pros.startswith("."):
                 continue
             if os.path.isdir(o_path.join(LOCALDIR, pros)):
                 pro += 1
@@ -835,7 +835,9 @@ class Tool:
         print("\033[33m    [00] 返回\033[0m\n")
         op_menu = input("    请输入编号: ")
 
-        magiskboot_path = f"{LOCALDIR}{os.sep}bin{os.sep}Linux{os.sep}x86_64{os.sep}magiskboot"
+        magiskboot_path = (
+            f"{LOCALDIR}{os.sep}bin{os.sep}Linux{os.sep}x86_64{os.sep}magiskboot"
+        )
 
         if op_menu in boots.keys():
             kmi = {1: "android13-5.15", 2: "android14-5.15", 3: "android14-6.1"}
@@ -843,7 +845,8 @@ class Tool:
                 print(f"{i}: {kmi[i]}")
             kmi_choice = int(input("\033[33m请选择内核镜像需要的kmi\033: [0m"))
             os.system(
-                f"ksud boot-patch -b {boots[op_menu]} --magiskboot {magiskboot_path} --kmi={kmi.get(kmi_choice)} --out {project}")
+                f"ksud boot-patch -b {boots[op_menu]} --magiskboot {magiskboot_path} --kmi={kmi.get(kmi_choice)} --out {project}"
+            )
 
         elif op_menu == "00":
             os.chdir(project)
@@ -853,8 +856,7 @@ class Tool:
         input("任意按钮继续")
         self.project()
 
-    def apatch_patch(self):
-        ...
+    def apatch_patch(self): ...
 
     def magisk_patch(self):
         cls()
@@ -1138,9 +1140,7 @@ def pack_choo(project):
                     parts[partn] = packs
                     types[partn] = "dtbo"
                     print(f"   [{partn}]- {packs} <dtbo>\n")
-        print(
-            "\n\033[33m [55] 循环打包 [66] 打包Super [00]返回\033[0m"
-        )
+        print("\n\033[33m [55] 循环打包 [66] 打包Super [00]返回\033[0m")
         print("  --------------------------------------")
         filed = input("  请输入对应序号：")
         if filed == "0":
@@ -1280,7 +1280,7 @@ def dboot(infile, orig):
         ).replace("\\", "/")
         call(
             exe='busybox ash -c "find | sed 1d | %s -H newc -R 0:0 -o -F ../ramdisk-new.cpio"'
-                % cpio,
+            % cpio,
             sp=1,
             shstate=True,
         )
