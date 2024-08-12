@@ -5,14 +5,12 @@ import zipfile
 
 import banner
 
+ZIP_WHITELIST = ["run", "run.exe", "bin", "LICENSE"]
+
 print(f"\033[31m {banner.banner1} \033[0m")
 print(f"Build for {platform.system()}")
-from pip._internal.cli.main import main as _main
 
-with open("requirements.txt", "r", encoding="utf-8") as l:
-    for i in l.read().split("\n"):
-        print(f"Installing {i}")
-        _main(["install", i])
+os.system("pip install -r requirements.txt")
 
 local = os.getcwd()
 
@@ -47,9 +45,7 @@ def zip_folder(folder_path):
     print(f"Done!")
 
 
-import PyInstaller.__main__
-
-PyInstaller.__main__.run(["-F", "run.py", "--exclude-module=numpy", "-i", "icon.ico"])
+os.system("pyinstaller -F run.py --exclude-module=numpy -i icon.ico")
 
 if os.name == "nt":
     if os.path.exists(local + os.sep + "dist" + os.sep + "run.exe"):
@@ -70,7 +66,7 @@ elif os.name == "posix":
             continue
         shutil.rmtree(local + os.sep + "bin" + os.sep + "Linux" + os.sep + i)
 for i in os.listdir(local):
-    if i not in ["run", "run.exe", "bin", "LICENSE", "ksu-drivers"]:
+    if i not in ZIP_WHITELIST:
         print(f"Removing {i}")
         if os.path.isdir(local + os.sep + i):
             try:

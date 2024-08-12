@@ -1,12 +1,9 @@
 from __future__ import print_function
 
-import errno
 import os
 import struct
 import subprocess
 import sys
-import tempfile
-import zipfile
 from os.path import exists
 from random import randint, choice
 from shutil import move, rmtree
@@ -15,12 +12,7 @@ from threading import Thread
 import blockimgdiff
 from os import getcwd
 import platform as plat
-import update_metadata_pb2 as um
 from lpunpack import SparseImage
-
-
-def u64(x):
-    return struct.unpack(">Q", x)[0]
 
 
 DataImage = blockimgdiff.DataImage
@@ -118,7 +110,7 @@ def gettype(file) -> str:
             f.seek(number)
             return f.read(len(header)) == header
 
-    def is_super(fil) -> any:
+    def is_super(fil) -> bytes | bool:
         with open(fil, "rb") as file_:
             buf = bytearray(file_.read(4))
             if len(buf) < 4:
@@ -134,7 +126,7 @@ def gettype(file) -> str:
             buf += bytearray(file_.read(4))
         return buf[1:] == b"\x67\x44\x6c\x61"
 
-    def is_super2(fil) -> any:
+    def is_super2(fil) -> bytes | bool:
         with open(fil, "rb") as file_:
             try:
                 file_.seek(4096, 0)
@@ -266,7 +258,7 @@ def simg2img(path):
         print(e)
 
 
-def findfile(file, dir_) -> str:
+def findfile(file, dir_) -> str | None:
     for root, dirs, files in os.walk(dir_, topdown=True):
         if file in files:
             if os.name == "nt":

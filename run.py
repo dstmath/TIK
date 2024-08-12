@@ -648,6 +648,7 @@ class Tool:
     def greet(self):
         print(f'\033[31m {getattr(banner, "banner%s" % settings.banner)} \033[0m')
         print("\033[93;44m Alpha Edition \033[0m")
+
         if settings.online == "true":
             try:
                 content = json.loads(
@@ -667,6 +668,8 @@ class Tool:
             print(f"\033[36m “开源，是一场无问西东的前行”")
 
     def main(self):
+        # change the working directory to the project directory
+        os.chdir(LOCALDIR)
         projects = {}
         pro = 0
         cls()
@@ -685,7 +688,9 @@ class Tool:
 
         print("  --------------------------------------")
         print("\033[33m  [77] 设置  [88] 退出\033[0m\n")
+
         op_pro = input("  请输入序号：")
+
         if op_pro == "00":
             # delete the project
             if (
@@ -698,6 +703,7 @@ class Tool:
             else:
                 ywarn("  项目不存在！")
                 input("任意按钮继续")
+
         elif op_pro == "0":
             project_name = input("请输入项目名称(非中文)：")
             if project_name:
@@ -710,12 +716,16 @@ class Tool:
             else:
                 ywarn("  Input error!")
                 input("任意按钮继续")
+
         elif op_pro == "88":
             cls()
             ysuc("\n感谢使用TI-KITCHEN5,再见！")
             sys.exit(0)
+
         elif op_pro == "77":
             Setting()
+
+        # enter to the working project
         elif op_pro.isdigit():
             if op_pro in projects.keys():
                 self.project_name = projects[op_pro]
@@ -723,13 +733,16 @@ class Tool:
             else:
                 ywarn("  Input error!")
                 input("任意按钮继续")
+
         else:
             ywarn("  Input error!")
             input("任意按钮继续")
+
+        # back to the main menu
         self.main()
 
     @staticmethod
-    def dis_avb(fstab):
+    def dis_avb(fstab: str):
         print(f"正在处理: {fstab}")
         if not os.path.exists(fstab):
             return
@@ -746,69 +759,59 @@ class Tool:
         else:
             details = re.sub(",avb", "", details)
         details = re.sub(",avb_keys=.*avbpubkey", "", details)
-        details = re.sub(",avb=vbmeta_vendor", "", details)
         details = re.sub(",avb=vbmeta", "", details)
         with open(fstab, "w") as tf:
             tf.write(details)
 
     @staticmethod
-    def dis_data_encryption(fstab):
-        print(f"正在处理: {fstab}")
-        if not os.path.exists(fstab):
-            return
-        with open(fstab, "r") as sf:
-            details = re.sub(
-                ",fileencryption=aes-256-xts:aes-256-cts:v2+inlinecrypt_optimized+wrappedkey_v0",
-                "",
-                sf.read(),
-            )
-        details = re.sub(
-            ",fileencryption=aes-256-xts:aes-256-cts:v2+emmc_optimized+wrappedkey_v0",
-            ",",
-            details,
-        )
-        details = re.sub(",fileencryption=aes-256-xts:aes-256-cts:v2", "", details)
-        details = re.sub(",metadata_encryption=aes-256-xts:wrappedkey_v0", "", details)
-        details = re.sub(",fileencryption=aes-256-xts:wrappedkey_v0", "", details)
-        details = re.sub(",metadata_encryption=aes-256-xts", "", details)
-        details = re.sub(",fileencryption=aes-256-xts", "", details)
-        details = re.sub(",fileencryption=ice", "", details)
-        details = re.sub("fileencryption", "encryptable", details)
-        with open(fstab, "w") as tf:
-            tf.write(details)
+    def dis_data_encryption(fstab): ...
 
     def project(self):
+        # the current project directory
         project_dir = LOCALDIR + os.sep + self.project_name
+
         cls()
+        # change the working directory
         os.chdir(project_dir)
+
         print(" \n\033[31m>项目菜单 \033[0m\n")
         (
             print(f"  项目：{self.project_name}\033[91m(不完整)\033[0m\n")
             if not os.path.exists(os.path.abspath("config"))
             else print(f"  项目：{self.project_name}\n")
         )
-        if not os.path.exists(project_dir + os.sep + "TI_out"):
-            os.makedirs(project_dir + os.sep + "TI_out")
+
+        # create the necessary directories if not exists
+        os.makedirs(project_dir + os.sep + "TI_out", exist_ok=True)
+
         print("\033[33m    0> 回到主页     2> 解包菜单\033[0m\n")
         print("\033[33m    3> 打包菜单     4> 定制功能\033[0m\n")
         print("\033[33m    88> 退出\033[0m\n")
+
         op_menu = input("    请输入编号: ")
+
         if op_menu == "0":
-            os.chdir(LOCALDIR)
+            self.main()
             return
+
         elif op_menu == "2":
             unpack_choo(project_dir)
+
         elif op_menu == "3":
             pack_choo(project_dir)
+
         elif op_menu == "4":
             self.custom_rom()
+
         elif op_menu == "88":
             cls()
             ysuc("\n感谢使用TI-KITCHEN5,再见！")
             sys.exit(0)
+
         else:
             ywarn("   Input error!")
             input("任意按钮继续")
+
         self.project()
 
     def custom_rom(self):
@@ -833,10 +836,8 @@ class Tool:
                     if file.startswith("fstab."):
                         self.dis_avb(os.path.join(root, file))
         elif op_menu == "5":
-            for root, dirs, files in os.walk(LOCALDIR + os.sep + self.project_name):
-                for file in files:
-                    if file.startswith("fstab."):
-                        self.dis_data_encryption(os.path.join(root, file))
+            ywarn("暂未支持")
+            ...
         else:
             ywarn("   Input error!")
         input("任意按钮继续")
@@ -861,7 +862,7 @@ class Tool:
                 print(f"  [{cs}]--{i}")
         print("\033[33m-------------------------------\033[0m")
         print("\033[33m    [00] 返回\033[0m\n")
-        op_menu = input("    请输入编号: ")
+        op_menu = input("    请输入需要修补的boot的序号: ")
 
         magiskboot_path = (
             f"{LOCALDIR}{os.sep}bin{os.sep}Linux{os.sep}x86_64{os.sep}magiskboot"
@@ -870,10 +871,16 @@ class Tool:
         ksud_path = f"{LOCALDIR}{os.sep}bin{os.sep}Linux{os.sep}x86_64{os.sep}ksud"
 
         if op_menu in boots.keys():
-            kmi = {1: "android13-5.15", 2: "android14-5.15", 3: "android14-6.1"}
+            kmi = {"1": "android13-5.15", "2": "android14-5.15", "3": "android14-6.1"}
+            print("\033[33m-------------------------------\033[0m")
+            print("\033[33m    [00] 取消修补\033[0m\n")
             for i in kmi.keys():
-                print(f"{i}: {kmi[i]}")
-            kmi_choice = int(input("\033[33m请选择内核镜像需要的kmi\033: [0m"))
+                print(f"    {i}: {kmi[i]}\n")
+            kmi_choice = input("\033[33m请选择内核镜像需要的kmi: \033[0m")
+
+            if kmi_choice == "00":
+                return
+
             os.system(
                 f"{ksud_path} boot-patch -b {boots[op_menu]} --magiskboot {magiskboot_path} --kmi={kmi.get(kmi_choice)} --out {project}"
             )
@@ -929,93 +936,6 @@ class Tool:
         input("任意按钮继续")
         self.magisk_patch()
         cls()
-        project = LOCALDIR + os.sep + self.project_name
-        print(" \033[31m>打包ROM \033[0m\n")
-        print(f"  项目：{os.path.basename(project)}\n")
-        print("\033[33m    1> 直接打包     2> 卡线一体 \n    3> 返回\033[0m\n")
-        chose = input("    请输入编号: ")
-        if chose == "1":
-            print("正在准备打包...")
-            for v in [
-                "firmware-update",
-                "META-INF",
-                "exaid.img",
-                "dynamic_partitions_op_list",
-            ]:
-                if os.path.isdir(os.path.join(project, v)):
-                    if not os.path.isdir(os.path.join(project, "TI_out" + os.sep + v)):
-                        shutil.copytree(
-                            os.path.join(project, v),
-                            os.path.join(project, "TI_out" + os.sep + v),
-                        )
-                elif os.path.isfile(os.path.join(project, v)):
-                    if not os.path.isfile(os.path.join(project, "TI_out" + os.sep + v)):
-                        shutil.copy(
-                            os.path.join(project, v), os.path.join(project, "TI_out")
-                        )
-            for root, dirs, files in os.walk(project):
-                for f in files:
-                    if f.endswith(".br") or f.endswith(".dat") or f.endswith(".list"):
-                        if not os.path.isfile(
-                            os.path.join(project, "TI_out" + os.sep + f)
-                        ) and os.access(os.path.join(project, f), os.F_OK):
-                            shutil.copy(
-                                os.path.join(project, str(f)),
-                                os.path.join(project, "TI_out"),
-                            )
-        else:
-            return
-        ZipFile(
-            os.path.basename(project) + ".zip",
-            project + os.sep + "TI_out",
-            project + os.sep,
-            LOCALDIR + os.sep,
-        )
-
-        cls()
-        zipn = 0
-        zips = {}
-        print(" \033[31m >ROM列表 \033[0m\n")
-        ywarn(f"   请将ROM置于{LOCALDIR}下！\n")
-        if dir_has(LOCALDIR, ".zip"):
-            for zip0 in os.listdir(LOCALDIR):
-                if zip0.endswith(".zip"):
-                    if os.path.isfile(os.path.abspath(zip0)):
-                        if os.path.getsize(os.path.abspath(zip0)):
-                            zipn += 1
-                            print(f"   [{zipn}]- {zip0}\n")
-                            zips[zipn] = zip0
-        else:
-            ywarn("	没有ROM文件！")
-        print("--------------------------------------------------\n")
-        zipd = input("请输入对应序列号：")
-        if zipd.isdigit():
-            if int(zipd) in zips.keys():
-                project_name = input("请输入项目名称(可留空)：")
-                project = (
-                    "TI_%s" % project_name
-                    if project_name
-                    else "TI_%s" % os.path.basename(zips[int(zipd)]).replace(".zip", "")
-                )
-                if os.path.exists(LOCALDIR + os.sep + project):
-                    project = project + time.strftime("%m%d%H%M%S")
-                    ywarn(f"项目已存在！自动命名为：{project}")
-                os.makedirs(LOCALDIR + os.sep + project)
-                print(f"创建{project}成功！")
-                with Console().status("[yellow]解压刷机包中...[/]"):
-                    zipfile.ZipFile(os.path.abspath(zips[int(zipd)])).extractall(
-                        LOCALDIR + os.sep + project
-                    )
-                yecho("分解ROM中...")
-                autounpack(LOCALDIR + os.sep + project)
-                self.project_name = project
-                self.project()
-            else:
-                ywarn("Input Error")
-                input("任意按钮继续")
-        else:
-            ywarn("Input error!")
-            input("任意按钮继续")
 
 
 def get_all_file_paths(directory) -> Generator:
@@ -1291,9 +1211,12 @@ def dboot(infile, orig):
         except Exception as e:
             print("Ramdisk Not Found.. %s" % e)
             return
-        cpio = utils.findfile(
+
+        if cpio := utils.findfile(
             "cpio.exe" if os.name != "posix" else "cpio", ebinner
-        ).replace("\\", "/")
+        ):
+            cpio.replace("\\", "/")
+
         call(
             exe='busybox ash -c "find | sed 1d | %s -H newc -R 0:0 -o -F ../ramdisk-new.cpio"'
             % cpio,

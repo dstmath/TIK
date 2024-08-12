@@ -18,7 +18,7 @@ jobs:
       - name: Calculate Release Version
         id: calculate_version
         run: |
-          echo "RELEASE_VERSION=$((GITHUB_RUN_NUMBER + 150))" >> $GITHUB_ENV
+          echo "RELEASE_VERSION=$((GITHUB_RUN_NUMBER + 140))" >> $GITHUB_ENV
       - name: Rename Tool
         run: |
           cd TIK-win
