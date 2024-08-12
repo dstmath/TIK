@@ -13,7 +13,6 @@ jobs:
     needs: [build-win, build-linux]
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4.1.7
       - uses: actions/download-artifact@v4.1.8
       - name: Calculate Release Version
         id: calculate_version
@@ -49,7 +48,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4.1.7
-      - name: Set up Python 3.8.10
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5.1.1
         with:
           # Semantic version range syntax or exact version of a Python version
