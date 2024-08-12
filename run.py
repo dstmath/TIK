@@ -14,6 +14,7 @@ import banner
 import ext4
 from Magisk import Magisk_patch
 import os
+from typing import Generator
 
 if os.name == "nt":
     import ctypes
@@ -172,6 +173,25 @@ except (Exception, BaseException):
 class SetUtils:
     def __init__(self, path):
         self.path = path
+        self.supername = "super"
+        self.brcom = "1"
+        self.banner = "1"
+        self.pack_e2 = "1"
+        self.pack_sparse = "0"
+        self.autoslotsuffixing = ""
+        self.fullsuper = "-F"
+        self.BLOCKSIZE = "4096"
+        self.SBLOCKSIZE = "4096"
+        self.metadatasize = "65536"
+        self.super_group = "qti_dynamic_partitions"
+        self.erofslim = "lz4hc,8"
+        self.utcstamp = "1722470400"
+        self.diysize = ""
+        self.diyimgtype = "1"
+        self.online = "true"
+        self.erofs_old_kernel = "0"
+        self.context = "false"
+        self.version = "5.121"
 
     def load_set(self):
         with open(self.path, "r") as ss:
@@ -620,16 +640,13 @@ class Tool:
     """
 
     def __init__(self):
-        self.pro = None
+        # current working project
+        self.project_name = ""
+        # skip them when recognize projects
+        self.WHITELIST = ["bin", "ksu-derviers"]
 
-    def main(self):
-        projects = {}
-        pro = 0
-        cls()
-        if settings.banner != "6":
-            print(f'\033[31m {getattr(banner, "banner%s" % settings.banner)} \033[0m')
-        else:
-            print("=" * 50)
+    def greet(self):
+        print(f'\033[31m {getattr(banner, "banner%s" % settings.banner)} \033[0m')
         print("\033[93;44m Alpha Edition \033[0m")
         if settings.online == "true":
             try:
@@ -648,36 +665,47 @@ class Tool:
                 print(f"\033[36m---{another}《{fr}》\033[0m\n")
         else:
             print(f"\033[36m “开源，是一场无问西东的前行”")
+
+    def main(self):
+        projects = {}
+        pro = 0
+        cls()
+        self.greet()
         print(" >\033[33m 项目列表 \033[0m\n")
         print("\033[31m   [00]  删除项目\033[0m\n\n", "  [0]  新建项目\n")
+
+        # list all of the projects
         for pros in os.listdir(LOCALDIR):
-            if pros == "bin" or pros == "ksu-drivers" or pros.startswith("."):
+            if pros in self.WHITELIST or pros.startswith("."):
                 continue
             if os.path.isdir(o_path.join(LOCALDIR, pros)):
                 pro += 1
                 print(f"   [{pro}]  {pros}\n")
                 projects[str(pro)] = pros
+
         print("  --------------------------------------")
         print("\033[33m  [77] 设置  [88] 退出\033[0m\n")
         op_pro = input("  请输入序号：")
         if op_pro == "00":
-            op_pro = input("  请输入你要删除的项目序号:")
-            op_pro = op_pro.split() if " " in op_pro else [op_pro]
-            for op in op_pro:
-                if op in projects.keys():
-                    if input(f"  确认删除{projects[op]}？[1/0]") == "1":
-                        rmdire(o_path.join(LOCALDIR, projects[op]))
-                    else:
-                        ywarn("取消删除")
+            # delete the project
+            if (
+                delete_index := input("  请输入你要删除的项目序号:").strip()
+            ) in projects.keys():
+                if input(f"  确认删除{projects[delete_index]}？[1/0]") == "1":
+                    rmdire(o_path.join(LOCALDIR, projects[delete_index]))
+                else:
+                    ywarn("取消删除")
+            else:
+                ywarn("  项目不存在！")
+                input("任意按钮继续")
         elif op_pro == "0":
-            projec = input("请输入项目名称(非中文)：")
-            if projec:
-                if os.path.exists(o_path.join(LOCALDIR, projec)):
-                    projec = f'{projec}_{time.strftime("%m%d%H%M%S")}'
-                    ywarn(f"项目已存在！自动命名为：{projec}")
-                    time.sleep(1)
-                os.makedirs(o_path.join(LOCALDIR, projec, "config"))
-                self.pro = projec
+            project_name = input("请输入项目名称(非中文)：")
+            if project_name:
+                if os.path.exists(o_path.join(LOCALDIR, project_name)):
+                    ywarn(f"项目已存在！请更换名称")
+                    input("任意按钮继续")
+                os.makedirs(o_path.join(LOCALDIR, project_name, "config"))
+                self.project_name = project_name
                 self.project()
             else:
                 ywarn("  Input error!")
@@ -690,7 +718,7 @@ class Tool:
             Setting()
         elif op_pro.isdigit():
             if op_pro in projects.keys():
-                self.pro = projects[op_pro]
+                self.project_name = projects[op_pro]
                 self.project()
             else:
                 ywarn("  Input error!")
@@ -750,14 +778,14 @@ class Tool:
             tf.write(details)
 
     def project(self):
-        project_dir = LOCALDIR + os.sep + self.pro
+        project_dir = LOCALDIR + os.sep + self.project_name
         cls()
         os.chdir(project_dir)
         print(" \n\033[31m>项目菜单 \033[0m\n")
         (
-            print(f"  项目：{self.pro}\033[91m(不完整)\033[0m\n")
+            print(f"  项目：{self.project_name}\033[91m(不完整)\033[0m\n")
             if not os.path.exists(os.path.abspath("config"))
-            else print(f"  项目：{self.pro}\n")
+            else print(f"  项目：{self.project_name}\n")
         )
         if not os.path.exists(project_dir + os.sep + "TI_out"):
             os.makedirs(project_dir + os.sep + "TI_out")
@@ -786,7 +814,7 @@ class Tool:
     def custom_rom(self):
         cls()
         print(" \033[31m>定制菜单 \033[0m\n")
-        print(f"  项目：{self.pro}\n")
+        print(f"  项目：{self.project_name}\n")
         print("\033[33m    0> 返回上级  1> 面具修补\033[0m\n")
         print("\033[33m    2> KSU修补   3> Apatch修补\033[0m\n")
         print("\033[33m    4> 去除avb   5> 去除data加密\033[0m\n")
@@ -800,12 +828,12 @@ class Tool:
         elif op_menu == "3":
             self.apatch_patch()
         elif op_menu == "4":
-            for root, dirs, files in os.walk(LOCALDIR + os.sep + self.pro):
+            for root, dirs, files in os.walk(LOCALDIR + os.sep + self.project_name):
                 for file in files:
                     if file.startswith("fstab."):
                         self.dis_avb(os.path.join(root, file))
         elif op_menu == "5":
-            for root, dirs, files in os.walk(LOCALDIR + os.sep + self.pro):
+            for root, dirs, files in os.walk(LOCALDIR + os.sep + self.project_name):
                 for file in files:
                     if file.startswith("fstab."):
                         self.dis_data_encryption(os.path.join(root, file))
@@ -817,10 +845,10 @@ class Tool:
     def ksu_patch(self):
         cls()
         cs = 0
-        project = LOCALDIR + os.sep + self.pro
+        project = LOCALDIR + os.sep + self.project_name
         os.chdir(LOCALDIR)
         print(" \n\033[31m>ksu修补 \033[0m\n")
-        print(f"  项目：{self.pro}\n")
+        print(f"  项目：{self.project_name}\n")
         print(f"  请将要修补的镜像放入{project}")
 
         boots = {}
@@ -839,9 +867,7 @@ class Tool:
             f"{LOCALDIR}{os.sep}bin{os.sep}Linux{os.sep}x86_64{os.sep}magiskboot"
         )
 
-        ksud_path = (
-            f"{LOCALDIR}{os.sep}bin{os.sep}Linux{os.sep}x86_64{os.sep}ksud"
-        )
+        ksud_path = f"{LOCALDIR}{os.sep}bin{os.sep}Linux{os.sep}x86_64{os.sep}ksud"
 
         if op_menu in boots.keys():
             kmi = {1: "android13-5.15", 2: "android14-5.15", 3: "android14-6.1"}
@@ -865,10 +891,10 @@ class Tool:
     def magisk_patch(self):
         cls()
         cs = 0
-        project = LOCALDIR + os.sep + self.pro
+        project = LOCALDIR + os.sep + self.project_name
         os.chdir(LOCALDIR)
         print(" \n\033[31m>面具修补 \033[0m\n")
-        print(f"  项目：{self.pro}\n")
+        print(f"  项目：{self.project_name}\n")
         print(f"  请将要修补的镜像放入{project}")
         boots = {}
         for i in os.listdir(project):
@@ -903,7 +929,7 @@ class Tool:
         input("任意按钮继续")
         self.magisk_patch()
         cls()
-        project = LOCALDIR + os.sep + self.pro
+        project = LOCALDIR + os.sep + self.project_name
         print(" \033[31m>打包ROM \033[0m\n")
         print(f"  项目：{os.path.basename(project)}\n")
         print("\033[33m    1> 直接打包     2> 卡线一体 \n    3> 返回\033[0m\n")
@@ -965,10 +991,10 @@ class Tool:
         zipd = input("请输入对应序列号：")
         if zipd.isdigit():
             if int(zipd) in zips.keys():
-                projec = input("请输入项目名称(可留空)：")
+                project_name = input("请输入项目名称(可留空)：")
                 project = (
-                    "TI_%s" % projec
-                    if projec
+                    "TI_%s" % project_name
+                    if project_name
                     else "TI_%s" % os.path.basename(zips[int(zipd)]).replace(".zip", "")
                 )
                 if os.path.exists(LOCALDIR + os.sep + project):
@@ -982,7 +1008,7 @@ class Tool:
                     )
                 yecho("分解ROM中...")
                 autounpack(LOCALDIR + os.sep + project)
-                self.pro = project
+                self.project_name = project
                 self.project()
             else:
                 ywarn("Input Error")
@@ -992,7 +1018,7 @@ class Tool:
             input("任意按钮继续")
 
 
-def get_all_file_paths(directory) -> Ellipsis:
+def get_all_file_paths(directory) -> Generator:
     # 初始化文件路径列表
     for root, directories, files in os.walk(directory):
         for filename in files:
@@ -1022,20 +1048,6 @@ class ZipFile:
         if os.path.exists(relpath):
             print(f"打包完成:{relpath}")
         os.chdir(local)
-
-
-def gen_sh_engine(project, gavs=None, value=None):
-    if not os.path.exists(temp):
-        os.makedirs(temp)
-    engine = temp + os.sep + utils.v_code()
-    with open(engine, "w", encoding="utf-8", newline="\n") as en:
-        en.write(f"export project={project.replace(os.sep, '/')}\n")
-        en.write(f'export tool_bin={ebinner.replace(os.sep, "/")}\n')
-        if gavs or value:
-            for i in value:
-                en.write(f"export {i}='{gavs[i]}'\n")
-        en.write(f"source $1\n")
-    return engine.replace(os.sep, "/")
 
 
 def unpack_choo(project):
@@ -1564,20 +1576,6 @@ def inpacker(name, project, form, ftype, json_=None):
         os.rename(out_img + ".s", out_img)
     if form in ["br", "dat"]:
         rdi(name)
-    if form in ["dat", "br"]:
-        yecho(f"打包[DAT]:{name}")
-        rdi(name)
-        try:
-            os.remove(project + os.sep + "TI_out" + os.sep + name + ".patch.dat")
-        except (Exception, BaseException):
-            ...
-        utils.img2sdat(
-            out_img, project + os.sep + "TI_out", int(json_.get("dat_ver", "4")), name
-        )
-        try:
-            os.remove(out_img)
-        except (Exception, BaseException):
-            ...
     if form == "br":
         yecho(f"打包[BR]:{name}")
         call(
