@@ -63,11 +63,6 @@ elif os.name == "posix":
         for dirname in dirnames:
             if dirname != TARGET_PLATFORM:
                 shutil.rmtree(dirpath + os.sep + dirname)
-                continue
-            # 再遍历这个dirname下的文件夹
-            for sub_dir in os.listdir(dirpath + os.sep + dirname):
-                if sub_dir != TARGET_ARCH:
-                    shutil.rmtree(dirpath + os.sep + dirname + os.sep + sub_dir)
 
 for i in os.listdir(local):
     if i not in ZIP_WHITELIST:
