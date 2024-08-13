@@ -47,23 +47,24 @@ else:
 # build binary
 os.system("pyinstaller -F run.py --exclude-module=numpy -i icon.ico")
 
+BIN_PATH = local + os.sep + "bin"
 if os.name == "nt":
     if os.path.exists(local + os.sep + "dist" + os.sep + "run.exe"):
         shutil.move(local + os.sep + "dist" + os.sep + "run.exe", local)
-    if os.path.exists(local + os.sep + "bin" + os.sep + "Linux"):
-        shutil.rmtree(local + os.sep + "bin" + os.sep + "Linux")
-    if os.path.exists(local + os.sep + "bin" + os.sep + "Android"):
-        shutil.rmtree(local + os.sep + "bin" + os.sep + "Android")
-    if os.path.exists(local + os.sep + "bin" + os.sep + "Darwin"):
-        shutil.rmtree(local + os.sep + "bin" + os.sep + "Darwin")
+    if os.path.exists(os.path.join(BIN_PATH, "Linux")):
+        shutil.rmtree(os.path.join(BIN_PATH, "Linux"))
+    if os.path.exists(os.path.join(BIN_PATH, "Darwin")):
+        shutil.rmtree(os.path.join(BIN_PATH, "Darwin"))
+    if os.path.exists(os.path.join(BIN_PATH, "Android")):
+        shutil.rmtree(os.path.join(BIN_PATH, "Android"))
 elif os.name == "posix":
     if os.path.exists(local + os.sep + "dist" + os.sep + "run"):
         shutil.move(local + os.sep + "dist" + os.sep + "run", local)
-    for dir in os.listdir(local + os.sep + "bin"):
+    for dir in os.listdir(BIN_PATH):
         print(f"Checking {dir}")
-        if dir != TARGET_PLATFORM:
+        if (dir != TARGET_PLATFORM) and os.path.isdir(os.path.join(BIN_PATH, dir)):
             print(f"{dir} != {TARGET_PLATFORM}, remove it")
-            shutil.rmtree(local + os.sep + "bin" + os.sep + dir)
+            shutil.rmtree(os.path.join(BIN_PATH, dir))
 
 for i in os.listdir(local):
     if i not in ZIP_WHITELIST:
