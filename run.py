@@ -39,16 +39,27 @@ from utils import gettype, simg2img, call
 from rich.table import Table
 from rich.console import Console
 
+
+def get_binary_path(bname: str) -> str:
+    """
+    获取二进制文件的路径
+    :param bname: 二进制文件名
+    :return: 二进制文件路径
+    """
+    return o_path.join(SUITABLE_BIN_PATH, bname)
+
+
 LOCALDIR = os.getcwd()
-binner = o_path.join(LOCALDIR, "bin")
-setfile = o_path.join(LOCALDIR, "bin", "settings.json")
+BIN_PATH = o_path.join(LOCALDIR, "bin")
+settings_path = o_path.join(LOCALDIR, "bin", "settings.json")
 platform = plat.machine()
 ostype = plat.system()
 if os.getenv("PREFIX"):
     if os.getenv("PREFIX") == "/data/data/com.termux/files/usr":
         ostype = "Android"
-ebinner = o_path.join(binner, ostype, platform) + os.sep
-temp = o_path.join(binner, "temp")
+# find binary from here
+SUITABLE_BIN_PATH = o_path.join(BIN_PATH, ostype, platform) + os.sep
+temp = o_path.join(BIN_PATH, "temp")
 
 
 class JsonEdit:
@@ -138,7 +149,7 @@ def sha1(file_path):
         return ""
 
 
-if not os.path.exists(ebinner):
+if not os.path.exists(SUITABLE_BIN_PATH):
     raise Exception("Binary not found\nMay Not Support Your Device?")
 try:
     if (
@@ -207,7 +218,7 @@ class SetUtils:
         self.load_set()
 
 
-settings = SetUtils(setfile)
+settings = SetUtils(settings_path)
 settings.load_set()
 
 
@@ -267,7 +278,7 @@ class Upgrade:
                     except (Exception, BaseException):
                         input("更新文件损坏， 无法更新")
                         return
-                    self.settings = JsonEdit(setfile).read()
+                    self.settings = JsonEdit(settings_path).read()
                     json2 = JsonEdit(
                         os.path.join(extract_path, "bin", "settings.json")
                     ).read()
@@ -295,7 +306,7 @@ class Upgrade:
                         os.path.join(LOCALDIR, "bin2"), os.path.join(LOCALDIR, "bin")
                     )
                     shutil.rmtree(os.path.join(LOCALDIR, "bin2"))
-                    JsonEdit(setfile).write(json2)
+                    JsonEdit(settings_path).write(json2)
                     input("更新完毕, 任意按钮启动新程序...")
                     subprocess.Popen(
                         [
@@ -643,7 +654,7 @@ class Tool:
         # current working project
         self.project_name = ""
         # skip them when recognize projects
-        self.WHITELIST = ["bin", "ksu-derviers"]
+        self.WHITELIST = ["bin", "ksu-derviers", "__pycache__"]
 
     def greet(self):
         print(f'\033[31m {getattr(banner, "banner%s" % settings.banner)} \033[0m')
@@ -786,7 +797,7 @@ class Tool:
 
         print("\033[33m    0> 回到主页     2> 解包菜单\033[0m\n")
         print("\033[33m    3> 打包菜单     4> 定制功能\033[0m\n")
-        print("\033[33m    88> 退出\033[0m\n")
+        print("\033[33m    5> 精简分区     88> 退出\033[0m\n")
 
         op_menu = input("    请输入编号: ")
 
@@ -803,6 +814,9 @@ class Tool:
         elif op_menu == "4":
             self.custom_rom()
 
+        elif op_menu == "5":
+            self.slim_partition()
+
         elif op_menu == "88":
             cls()
             ysuc("\n感谢使用TI-KITCHEN5,再见！")
@@ -813,6 +827,11 @@ class Tool:
             input("任意按钮继续")
 
         self.project()
+
+    def slim_partition(self):
+        yecho("暂未支持")
+        input("任意按钮继续")
+        pass
 
     def custom_rom(self):
         cls()
@@ -864,12 +883,6 @@ class Tool:
         print("\033[33m    [00] 返回\033[0m\n")
         op_menu = input("    请输入需要修补的boot的序号: ")
 
-        magiskboot_path = (
-            f"{LOCALDIR}{os.sep}bin{os.sep}Linux{os.sep}x86_64{os.sep}magiskboot"
-        )
-
-        ksud_path = f"{LOCALDIR}{os.sep}bin{os.sep}Linux{os.sep}x86_64{os.sep}ksud"
-
         if op_menu in boots.keys():
             kmi = {"1": "android13-5.15", "2": "android14-5.15", "3": "android14-6.1"}
             print("\033[33m-------------------------------\033[0m")
@@ -882,7 +895,11 @@ class Tool:
                 return
 
             os.system(
-                f"{ksud_path} boot-patch -b {boots[op_menu]} --magiskboot {magiskboot_path} --kmi={kmi.get(kmi_choice)} --out {project}"
+                rf"{get_binary_path('ksud')} boot-patch \
+                    -b {boots[op_menu]} \
+                    --magiskboot {get_binary_path('magiskboot')} \
+                    --kmi={kmi.get(kmi_choice)} \
+                    --out {project}"
             )
 
         elif op_menu == "00":
@@ -979,6 +996,7 @@ def unpack_choo(project):
     infos = {}
     ywarn(f"  请将文件放于{project}根目录下！\n")
     print(" [0]- 分解所有文件\n")
+
     if dir_has(project, ".img"):
         print("\033[33m [Img]文件\033[0m\n")
         for img0 in os.listdir(project):
@@ -993,6 +1011,7 @@ def unpack_choo(project):
                     )
                     files[filen] = img0
                     infos[filen] = "img" if info != "sparse" else "sparse"
+
     if dir_has(project, ".dtb"):
         print("\033[33m [Dtb]文件\033[0m\n")
         for dtb0 in os.listdir(project):
@@ -1005,12 +1024,15 @@ def unpack_choo(project):
                     print(f"   [{filen}]- {dtb0}\n")
                     files[filen] = dtb0
                     infos[filen] = "dtb"
+
     print("\n\033[33m  [00] 返回  [77] 循环解包  \033[0m")
     print("  --------------------------------------")
     filed = input("  请输入对应序号：")
+
     if filed == "0":
         for v in files.keys():
             unpack(files[v], infos[v], project)
+
     elif filed == "77":
         imgcheck = 0
         upacall = input("  是否解包所有文件？ [1/0]")
@@ -1019,16 +1041,20 @@ def unpack_choo(project):
                 imgcheck = input(f"  是否解包{files[v]}?[1/0]")
             if upacall == "1" or imgcheck != "0":
                 unpack(files[v], infos[v], project)
+
     elif filed == "00":
         return
+
     elif filed.isdigit():
         (
             unpack(files[int(filed)], infos[int(filed)], project)
             if int(filed) in files.keys()
             else ywarn("Input error!")
         )
+
     else:
         ywarn("Input error!")
+
     input("任意按钮继续")
     unpack_choo(project)
 
@@ -1079,12 +1105,12 @@ def pack_choo(project):
         print("\n\033[33m [55] 循环打包 [66] 打包Super [00]返回\033[0m")
         print("  --------------------------------------")
         filed = input("  请输入对应序号：")
+        form = "img"
+        israw = True
         if filed == "0":
-            op_menu = input("  输出文件格式[1]img:")
-            if op_menu == "1":
-                form = "img"
-            else:
-                form = "img"
+            op_menu = input("  输出文件格式[1]raw [2]sparse:")
+            if op_menu == "2":
+                israw = False
             if settings.diyimgtype == "1":
                 imgtype = input("手动打包所有分区格式为：[1]ext4 [2]erofs [3]f2fs:")
                 if imgtype == "1":
@@ -1107,7 +1133,7 @@ def pack_choo(project):
                 elif types[f] == "dtbo":
                     makedtbo(parts[f], project)
                 else:
-                    inpacker(parts[f], project, form, imgtype)
+                    inpacker(parts[f], project, form, imgtype, israw)
         elif filed == "55":
             op_menu = input("  输出所有文件格式[1]br [2]dat [3]img:")
             if op_menu == "1":
@@ -1145,7 +1171,7 @@ def pack_choo(project):
                 elif types[f] == "dtbo":
                     makedtbo(parts[f], project)
                 else:
-                    inpacker(parts[f], project, form, imgtype, json_)
+                    inpacker(parts[f], project, form, imgtype, israw, json_)
         elif filed == "66":
             packsuper(project)
         elif filed == "00":
@@ -1171,12 +1197,8 @@ def pack_choo(project):
                     "dtb",
                     "dtbo",
                 ]:
-                    op_menu = input("  输出所有文件格式[1]br [2]dat [3]img:")
+                    op_menu = input("  输出所有文件格式[1]img:")
                     if op_menu == "1":
-                        form = "br"
-                    elif op_menu == "2":
-                        form = "dat"
-                    else:
                         form = "img"
                 else:
                     form = "img"
@@ -1191,7 +1213,7 @@ def pack_choo(project):
                 elif types[int(filed)] == "dtbo":
                     makedtbo(parts[int(filed)], project)
                 else:
-                    inpacker(parts[int(filed)], project, form, imgtype, json_)
+                    inpacker(parts[int(filed)], project, form, imgtype, israw, json_)
             else:
                 ywarn("Input error!")
         else:
@@ -1213,7 +1235,7 @@ def dboot(infile, orig):
             return
 
         if cpio := utils.findfile(
-            "cpio.exe" if os.name != "posix" else "cpio", ebinner
+            "cpio.exe" if os.name != "posix" else "cpio", SUITABLE_BIN_PATH
         ):
             cpio.replace("\\", "/")
 
@@ -1424,7 +1446,7 @@ def makedtbo(sf, project):
         ysuc(f"{os.path.basename(sf).split('.')[0]}.img生成完毕!")
 
 
-def inpacker(name, project, form, ftype, json_=None):
+def inpacker(name, project, form, ftype, israw: bool, json_=None):
     if json_ is None:
         json_ = {}
 
@@ -1439,36 +1461,51 @@ def inpacker(name, project, form, ftype, json_=None):
 
     file_contexts = project + os.sep + "config" + os.sep + name + "_file_contexts"
     fs_config = project + os.sep + "config" + os.sep + name + "_fs_config"
+
     utc = int(time.time()) if not settings.utcstamp else settings.utcstamp
     out_img = project + os.sep + "TI_out" + os.sep + name + ".img"
+
     in_files = project + os.sep + name + os.sep
+
     img_size0 = (
         int(cat(project + os.sep + "config" + os.sep + name + "_size.txt"))
         if os.path.exists(project + os.sep + "config" + os.sep + name + "_size.txt")
         else 0
     )
+
     img_size1 = dirsize(in_files, 1, 1).rsize_v
     if settings.diysize == "" and img_size0 < img_size1:
         ywarn("您设置的size过小,将动态调整size!")
         img_size0 = dirsize(
             in_files, 1, 3, project + os.sep + "dynamic_partitions_op_list"
         ).rsize_v
+
     elif settings.diysize == "":
         img_size0 = dirsize(
             in_files, 1, 3, project + os.sep + "dynamic_partitions_op_list"
         ).rsize_v
+
+    # patch file_contexts and fs_config
     fspatch.main(in_files, fs_config)
-    if settings.context == "true" and os.path.exists(file_contexts):
-        contextpatch.main(in_files, file_contexts)
-    if os.path.exists(file_contexts):
-        utils.qc(file_contexts)
     utils.qc(fs_config)
+
+    if os.path.exists(file_contexts):
+        contextpatch.main(in_files, file_contexts)
+        utils.qc(file_contexts)
+
     size = img_size0 / int(settings.BLOCKSIZE)
     size = int(size)
     if ftype == "erofs":
-        other_ = "-E legacy-compress" if settings.erofs_old_kernel == "1" else ""
         call(
-            f"mkfs.erofs {other_} -z{settings.erofslim}  -T {utc} --mount-point=/{name} --fs-config-file={fs_config} --product-out={os.path.dirname(out_img)} --file-contexts={file_contexts} {out_img} {in_files}"
+            rf"mkfs.erofs \
+                -z{settings.erofslim} \
+                -T {utc} \
+                --mount-point=/{name} \
+                --fs-config-file={fs_config} \
+                --file-contexts={file_contexts} \
+                --product-out={os.path.dirname(out_img)} \
+                {out_img} \
+                {in_files}"
         )
     elif ftype == "f2fs":
         size_f2fs = (54 * 1024 * 1024) + img_size1
@@ -1476,34 +1513,52 @@ def inpacker(name, project, form, ftype, json_=None):
         with open(out_img, "wb") as f:
             f.truncate(size_f2fs)
         call(
-            f"mkfs.f2fs {out_img} -O extra_attr -O inode_checksum -O sb_checksum -O compression -f"
+            rf"mkfs.f2fs {out_img} \
+                -O extra_attr \
+                -O inode_checksum \
+                -O sb_checksum \
+                -O compression \
+                -f"
         )
         call(
-            f"sload.f2fs -f {in_files} -C {fs_config} -s {file_contexts} -t /{name} {out_img} -c"
+            rf"sload.f2fs \
+                -f {in_files} \
+                -C {fs_config} \
+                -s {file_contexts} \
+                -t /{name} \
+                {out_img} \
+                -c"
         )
     else:
         if os.path.exists(file_contexts):
             call(
-                f"mke2fs -O ^has_journal -L {name} -I 256 -M /{name} -m 0 -t ext4 -b {settings.BLOCKSIZE} {out_img} {size}"
+                rf"mke2fs \
+                    -O ^has_journal \
+                    -L {name} \
+                    -I 256 \
+                    -M /{name} \
+                    -m 0 \
+                    -t ext4 \
+                    -b {settings.BLOCKSIZE} \
+                    {out_img} \
+                    {size}"
             )
             call(
-                f"e2fsdroid -e -T {utc} -S {file_contexts} -C {fs_config} -a /{name} -f {in_files} {out_img}"
+                rf"e2fsdroid -e \
+                    -T {utc} \
+                    -S {file_contexts} \
+                    -C {fs_config} \
+                    -a /{name} \
+                    -f {in_files} \
+                    {out_img}"
             )
         else:
             ywarn("Miss file_contexts")
-            sys.exit(1)
 
-    if settings.pack_sparse == "1" or form in ["dat", "br"]:
+    if not israw:
         call(f"img2simg {out_img} {out_img}.s")
         os.remove(out_img)
         os.rename(out_img + ".s", out_img)
-    if form in ["br", "dat"]:
-        rdi(name)
-    if form == "br":
-        yecho(f"打包[BR]:{name}")
-        call(
-            f'brotli -q {settings.brcom} -j -w 24 {project + os.sep + "TI_out" + os.sep + name + ".new.dat"} -o {project + os.sep + "TI_out" + os.sep + name + ".new.dat.br"}'
-        )
 
 
 def versize(size):
