@@ -15,6 +15,7 @@ import ext4
 from Magisk import Magisk_patch
 import os
 from typing import Generator
+from typing import Literal
 
 if os.name == "nt":
     import ctypes
@@ -138,47 +139,8 @@ def error(exception_type, exception, traceback):
     sys.exit(1)
 
 
-# sys.excepthook = error
-
-
-def sha1(file_path):
-    if os.path.exists(file_path):
-        with open(file_path, "rb") as f:
-            return hashlib.sha1(f.read()).hexdigest()
-    else:
-        return ""
-
-
 if not os.path.exists(SUITABLE_BIN_PATH):
     raise Exception("Binary not found\nMay Not Support Your Device?")
-try:
-    if (
-        os.path.basename(sys.argv[0])
-        == f'run_new{str() if os.name == "posix" else ".exe"}'
-    ):
-        os.remove(
-            os.path.join(LOCALDIR, f'run{str() if os.name == "posix" else ".exe"}')
-        )
-        shutil.copyfile(
-            os.path.join(LOCALDIR, f'run_new{str() if os.name == "posix" else ".exe"}'),
-            os.path.join(LOCALDIR, f'run{str() if os.name == "posix" else ".exe"}'),
-        )
-    elif (
-        os.path.basename(sys.argv[0]) == f'run{str() if os.name == "posix" else ".exe"}'
-    ):
-        new = os.path.join(
-            LOCALDIR, f'run_new{str() if os.name == "posix" else ".exe"}'
-        )
-        if os.path.exists(new):
-            if sha1(
-                os.path.join(LOCALDIR, f'run{str() if os.name == "posix" else ".exe"}')
-            ) == sha1(new):
-                os.remove(new)
-            else:
-                subprocess.Popen([new])
-                sys.exit()
-except (Exception, BaseException):
-    ...
 
 
 class SetUtils:
@@ -220,106 +182,6 @@ class SetUtils:
 
 settings = SetUtils(settings_path)
 settings.load_set()
-
-
-class Upgrade:
-    update_json = "https://mirror.ghproxy.com/https://raw.githubusercontent.com/ColdWindScholar/Upgrade/main/TIK.json"
-
-    def __init__(self):
-        if not os.path.exists(temp):
-            os.makedirs(temp)
-        cls()
-        with Console().status(f"[blue]正在检测新版本...[/]"):
-            try:
-                data = requests.get(self.update_json).json()
-            except (Exception, BaseException):
-                data = None
-        if not data:
-            input("连接服务器失败, 按任意按钮返回")
-            return
-        else:
-            if data.get("version", settings.version) != settings.version:
-                print(f"\033[31m {banner.banner1} \033[0m")
-                print(
-                    f"\033[0;32;40m发现版本：\033[0m\033[0;36;40m{settings.version} --> {data.get('version')}\033[0m"
-                )
-                print(
-                    f"\033[0;32;40m更新日志：\n\033[0m\033[0;36;40m{data.get('log', '1.Fix Some Bugs')}\033[0m"
-                )
-                input(
-                    "注意，交流群与release中的构建始终为最新开发环境版本，本功能仅用于检测近期较为稳定的构建"
-                )
-                try:
-                    link = data["link"][plat.system()][plat.machine()]
-                except (Exception, BaseException):
-                    input(
-                        "未发现适用于您设备的更新，请前往https://github.com/ColdWindScholar/TIK下载源代码自行更新"
-                    )
-                    return
-                if not link:
-                    input(
-                        "未发现适用于您设备的更新，请前往https://github.com/ColdWindScholar/TIK下载源代码自行更新"
-                    )
-                    return
-                if input("\033[0;33;40m是否更新?[1/0]\033[0m") == "1":
-                    print("正在下载新版本...")
-                    try:
-                        downloader.download([link], temp)
-                    except (BaseException, Exception):
-                        input("下载错误，请稍后重试")
-                        return
-                    print("开始更新，请不要关闭工具...")
-                    upgrade_pkg = os.path.join(temp, os.path.basename(link))
-                    extract_path = os.path.join(temp, "update")
-                    if os.path.exists(extract_path):
-                        rmdire(extract_path)
-                    try:
-                        zipfile.ZipFile(upgrade_pkg).extractall(extract_path)
-                    except (Exception, BaseException):
-                        input("更新文件损坏， 无法更新")
-                        return
-                    self.settings = JsonEdit(settings_path).read()
-                    json2 = JsonEdit(
-                        os.path.join(extract_path, "bin", "settings.json")
-                    ).read()
-                    for i in self.settings.keys():
-                        json2[i] = self.settings.get(i, json2.get(i, ""))
-                    json2["version"] = data.get("version", settings.version)
-                    self.settings = json2
-                    shutil.copytree(
-                        os.path.join(extract_path, "bin"),
-                        os.path.join(LOCALDIR, "bin2"),
-                        dirs_exist_ok=True,
-                    )
-                    shutil.move(
-                        os.path.join(
-                            extract_path,
-                            f'run{str() if os.name == "posix" else ".exe"}',
-                        ),
-                        os.path.join(
-                            LOCALDIR,
-                            f'run_new{str() if os.name == "posix" else ".exe"}',
-                        ),
-                    )
-                    shutil.rmtree(os.path.join(LOCALDIR, "bin"))
-                    shutil.copytree(
-                        os.path.join(LOCALDIR, "bin2"), os.path.join(LOCALDIR, "bin")
-                    )
-                    shutil.rmtree(os.path.join(LOCALDIR, "bin2"))
-                    JsonEdit(settings_path).write(json2)
-                    input("更新完毕, 任意按钮启动新程序...")
-                    subprocess.Popen(
-                        [
-                            os.path.join(
-                                LOCALDIR,
-                                f'run_new{str() if os.name == "posix" else ".exe"}',
-                            )
-                        ]
-                    )
-                    sys.exit()
-            else:
-                input("\033[0;32;40m你正在使用最新版本！任意按钮返回！\033[0m")
-                return
 
 
 class Setting:
@@ -513,7 +375,6 @@ class Setting:
     \033[33m  > 工具设置 \033[0m\n
        1>联网模式 \033[93m[{settings.online}]\033[0m\n
        2>Contexts修补 \033[93m[{settings.context}]\033[0m\n
-       3>检查更新 \n
        0>返回上级\n
        --------------------------
             """
@@ -527,8 +388,6 @@ class Setting:
             settings.change(
                 "context", "false" if settings.context == "true" else "true"
             )
-        elif op_pro == "3":
-            Upgrade()
         self.settings3()
 
     @staticmethod
@@ -1102,25 +961,29 @@ def pack_choo(project):
                     parts[partn] = packs
                     types[partn] = "dtbo"
                     print(f"   [{partn}]- {packs} <dtbo>\n")
-        print("\n\033[33m [55] 循环打包 [66] 打包Super [00]返回\033[0m")
+
+        print("\n\033[33m [66] 打包Super [00]返回\033[0m")
         print("  --------------------------------------")
         filed = input("  请输入对应序号：")
+        # default
         form = "img"
+        # default is raw
         israw = True
+
+        # pack all images
         if filed == "0":
+            yecho("您的选择是：打包所有镜像")
             op_menu = input("  输出文件格式[1]raw [2]sparse:")
             if op_menu == "2":
                 israw = False
-            if settings.diyimgtype == "1":
-                imgtype = input("手动打包所有分区格式为：[1]ext4 [2]erofs [3]f2fs:")
-                if imgtype == "1":
-                    imgtype = "ext"
-                elif imgtype == "2":
-                    imgtype = "erofs"
-                else:
-                    imgtype = "f2fs"
-            else:
+            imgtype = input("手动打包所有分区格式为：[1]ext4 [2]erofs [3]f2fs:")
+            if imgtype == "1":
                 imgtype = "ext"
+            elif imgtype == "2":
+                imgtype = "erofs"
+            else:
+                imgtype = "f2fs"
+
             for f in track(parts.keys()):
                 yecho(f"打包{parts[f]}...")
                 if types[f] == "bootimg":
@@ -1133,52 +996,14 @@ def pack_choo(project):
                 elif types[f] == "dtbo":
                     makedtbo(parts[f], project)
                 else:
-                    inpacker(parts[f], project, form, imgtype, israw)
-        elif filed == "55":
-            op_menu = input("  输出所有文件格式[1]br [2]dat [3]img:")
-            if op_menu == "1":
-                form = "br"
-            elif op_menu == "2":
-                form = "dat"
-            else:
-                form = "img"
-            if settings.diyimgtype == "1":
-                imgtype = input("手动打包所有分区格式为：[1]ext4 [2]erofs [3]f2fs:")
-                if imgtype == "1":
-                    imgtype = "ext"
-                elif imgtype == "2":
-                    imgtype = "erofs"
-                else:
-                    imgtype = "f2fs"
-            else:
-                imgtype = "ext"
-            for f in parts.keys():
-                imgcheck = (
-                    input(f"  是否打包{parts[f]}?[1/0]	")
-                    if input("  是否打包所有镜像？ [1/0]	") != "1"
-                    else "1"
-                )
-                if not imgcheck == "1":
-                    continue
-                yecho(f"打包{parts[f]}...")
-                if types[f] == "bootimg":
-                    dboot(
-                        project + os.sep + parts[f],
-                        project + os.sep + parts[f] + ".img",
-                    )
-                elif types[f] == "dtb":
-                    makedtb(parts[f], project)
-                elif types[f] == "dtbo":
-                    makedtbo(parts[f], project)
-                else:
-                    inpacker(parts[f], project, form, imgtype, israw, json_)
+                    pack_img(parts[f], imgtype, israw)
         elif filed == "66":
             packsuper(project)
         elif filed == "00":
             return
         elif filed.isdigit():
             if int(filed) in parts.keys():
-                if settings.diyimgtype == "1" and types[int(filed)] not in [
+                if types[int(filed)] not in [
                     "bootimg",
                     "dtb",
                     "dtbo",
@@ -1190,18 +1015,10 @@ def pack_choo(project):
                         imgtype = "erofs"
                     else:
                         imgtype = "f2fs"
-                else:
-                    imgtype = "ext"
-                if settings.diyimgtype == "1" and types[int(filed)] not in [
-                    "bootimg",
-                    "dtb",
-                    "dtbo",
-                ]:
-                    op_menu = input("  输出所有文件格式[1]img:")
-                    if op_menu == "1":
-                        form = "img"
-                else:
-                    form = "img"
+
+                    if input("  输出文件格式[1]raw [2]sparse:") == "2":
+                        israw = False
+
                 yecho(f"打包{parts[int(filed)]}")
                 if types[int(filed)] == "bootimg":
                     dboot(
@@ -1213,7 +1030,7 @@ def pack_choo(project):
                 elif types[int(filed)] == "dtbo":
                     makedtbo(parts[int(filed)], project)
                 else:
-                    inpacker(parts[int(filed)], project, form, imgtype, israw, json_)
+                    pack_img(parts[int(filed)], imgtype, israw, json_)
             else:
                 ywarn("Input error!")
         else:
@@ -1446,30 +1263,25 @@ def makedtbo(sf, project):
         ysuc(f"{os.path.basename(sf).split('.')[0]}.img生成完毕!")
 
 
-def inpacker(name, project, form, ftype, israw: bool, json_=None):
+def pack_img(
+    img_name, img_type: Literal["ext", "erofs", "f2fs"], israw: bool, json_=None
+):
     if json_ is None:
         json_ = {}
 
-    def rdi(name_):
-        try:
-            dir_path = os.path.join(project, "TI_out")
-            os.remove(dir_path + os.sep + name_ + ".new.dat")
-            os.remove(dir_path + os.sep + name_ + ".patch.dat")
-            os.remove(dir_path + os.sep + name_ + ".transfer.list")
-        except (Exception, BaseException):
-            ...
-
-    file_contexts = project + os.sep + "config" + os.sep + name + "_file_contexts"
-    fs_config = project + os.sep + "config" + os.sep + name + "_fs_config"
+    file_contexts = LOCALDIR + os.sep + "config" + os.sep + img_name + "_file_contexts"
+    fs_config = LOCALDIR + os.sep + "config" + os.sep + img_name + "_fs_config"
 
     utc = int(time.time()) if not settings.utcstamp else settings.utcstamp
-    out_img = project + os.sep + "TI_out" + os.sep + name + ".img"
+    out_img = LOCALDIR + os.sep + "TI_out" + os.sep + img_name + ".img"
 
-    in_files = project + os.sep + name + os.sep
+    in_files = LOCALDIR + os.sep + img_name + os.sep
 
     img_size0 = (
-        int(cat(project + os.sep + "config" + os.sep + name + "_size.txt"))
-        if os.path.exists(project + os.sep + "config" + os.sep + name + "_size.txt")
+        int(cat(LOCALDIR + os.sep + "config" + os.sep + img_name + "_size.txt"))
+        if os.path.exists(
+            LOCALDIR + os.sep + "config" + os.sep + img_name + "_size.txt"
+        )
         else 0
     )
 
@@ -1477,12 +1289,12 @@ def inpacker(name, project, form, ftype, israw: bool, json_=None):
     if settings.diysize == "" and img_size0 < img_size1:
         ywarn("您设置的size过小,将动态调整size!")
         img_size0 = dirsize(
-            in_files, 1, 3, project + os.sep + "dynamic_partitions_op_list"
+            in_files, 1, 3, LOCALDIR + os.sep + "dynamic_partitions_op_list"
         ).rsize_v
 
     elif settings.diysize == "":
         img_size0 = dirsize(
-            in_files, 1, 3, project + os.sep + "dynamic_partitions_op_list"
+            in_files, 1, 3, LOCALDIR + os.sep + "dynamic_partitions_op_list"
         ).rsize_v
 
     # patch file_contexts and fs_config
@@ -1495,19 +1307,19 @@ def inpacker(name, project, form, ftype, israw: bool, json_=None):
 
     size = img_size0 / int(settings.BLOCKSIZE)
     size = int(size)
-    if ftype == "erofs":
+    if img_type == "erofs":
         call(
             rf"mkfs.erofs \
                 -z{settings.erofslim} \
                 -T {utc} \
-                --mount-point=/{name} \
+                --mount-point=/{img_name} \
                 --fs-config-file={fs_config} \
                 --file-contexts={file_contexts} \
                 --product-out={os.path.dirname(out_img)} \
                 {out_img} \
                 {in_files}"
         )
-    elif ftype == "f2fs":
+    elif img_type == "f2fs":
         size_f2fs = (54 * 1024 * 1024) + img_size1
         size_f2fs = int(size_f2fs * 1.15) + 1
         with open(out_img, "wb") as f:
@@ -1525,7 +1337,7 @@ def inpacker(name, project, form, ftype, israw: bool, json_=None):
                 -f {in_files} \
                 -C {fs_config} \
                 -s {file_contexts} \
-                -t /{name} \
+                -t /{img_name} \
                 {out_img} \
                 -c"
         )
@@ -1534,9 +1346,9 @@ def inpacker(name, project, form, ftype, israw: bool, json_=None):
             call(
                 rf"mke2fs \
                     -O ^has_journal \
-                    -L {name} \
+                    -L {img_name} \
                     -I 256 \
-                    -M /{name} \
+                    -M /{img_name} \
                     -m 0 \
                     -t ext4 \
                     -b {settings.BLOCKSIZE} \
@@ -1548,7 +1360,7 @@ def inpacker(name, project, form, ftype, israw: bool, json_=None):
                     -T {utc} \
                     -S {file_contexts} \
                     -C {fs_config} \
-                    -a /{name} \
+                    -a /{img_name} \
                     -f {in_files} \
                     {out_img}"
             )
@@ -1718,6 +1530,7 @@ def insuper(imgdir, outputimg, ssize, stype, sparsev, isreadonly):
 def unpack(file, info, project):
     if not os.path.exists(file):
         file = os.path.join(project, file)
+
     json_ = JsonEdit(os.path.join(project, "config", "parts_info"))
     parts = json_.read()
     if not os.path.exists(project + os.sep + "config"):
@@ -1779,29 +1592,6 @@ def unpack(file, info, project):
     else:
         ywarn("未知格式！")
     json_.write(parts)
-
-
-def autounpack(project):
-    yecho("自动解包开始！")
-    os.chdir(project)
-    ask_ = input("解包所有文件？[1/0]")
-    for infile in os.listdir(project):
-        os.chdir(project)
-        if os.path.isdir(os.path.abspath(infile)):
-            continue
-        elif not os.path.exists(os.path.abspath(infile)):
-            continue
-        elif os.path.getsize(os.path.abspath(infile)) == 0:
-            continue
-        elif os.path.abspath(infile).endswith(".list") or os.path.abspath(
-            infile
-        ).endswith(".patch.dat"):
-            continue
-        if ask_ != "1":
-            if not input(f"要分解{infile}吗 [1/0]") == "1":
-                continue
-        if infile.endswith(".img"):
-            unpack(os.path.abspath(infile), "img", project)
 
 
 if __name__ == "__main__":
