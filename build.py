@@ -36,17 +36,17 @@ os.system("pip install -r requirements.txt")
 
 local = os.getcwd()
 
-if platform.system() == "Linux":
+TARGET_ARCH = ARCH if (ARCH := platform.machine()) else ""
+print(f"Target Arch: {TARGET_ARCH}")
+
+if TARGET_PLATFORM := platform.system() == "Linux":
     name = "TIK-linux.zip"
 else:
     name = "TIK-win.zip"
 
-
+# build binary
 os.system("pyinstaller -F run.py --exclude-module=numpy -i icon.ico")
 
-
-TARGET_ARCH = ARCH if (ARCH := platform.machine()) else ""
-print(f"Target Arch: {TARGET_ARCH}")
 if os.name == "nt":
     if os.path.exists(local + os.sep + "dist" + os.sep + "run.exe"):
         shutil.move(local + os.sep + "dist" + os.sep + "run.exe", local)
@@ -59,12 +59,14 @@ if os.name == "nt":
 elif os.name == "posix":
     if os.path.exists(local + os.sep + "dist" + os.sep + "run"):
         shutil.move(local + os.sep + "dist" + os.sep + "run", local)
-    if os.path.exists(local + os.sep + "bin" + os.sep + "Windows"):
-        shutil.rmtree(local + os.sep + "bin" + os.sep + "Windows")
-    for i in os.listdir(local + os.sep + "bin" + os.sep + "Linux"):
-        if i == TARGET_ARCH:
-            continue
-        shutil.rmtree(local + os.sep + "bin" + os.sep + "Linux" + os.sep + i)
+    for dirpath, dirnames, filenames in os.walk(local + os.sep + "bin"):
+        for dirname in dirnames:
+            if dirname != TARGET_PLATFORM:
+                shutil.rmtree(dirpath + os.sep + dirname)
+            # 再遍历这个dirname下的文件夹
+            for sub_dir in os.listdir(dirpath + os.sep + dirname):
+                if sub_dir != TARGET_ARCH:
+                    shutil.rmtree(dirpath + os.sep + dirname + os.sep + sub_dir)
 
 for i in os.listdir(local):
     if i not in ZIP_WHITELIST:
