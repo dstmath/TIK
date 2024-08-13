@@ -39,7 +39,7 @@ local = os.getcwd()
 TARGET_ARCH = ARCH if (ARCH := platform.machine()) else ""
 print(f"Target Arch: {TARGET_ARCH}")
 
-if TARGET_PLATFORM := platform.system() == "Linux":
+if (TARGET_PLATFORM := platform.system()) == "Linux":
     name = "TIK-linux.zip"
 else:
     name = "TIK-win.zip"
@@ -60,6 +60,7 @@ elif os.name == "posix":
     if os.path.exists(local + os.sep + "dist" + os.sep + "run"):
         shutil.move(local + os.sep + "dist" + os.sep + "run", local)
     for dir in os.listdir(local + os.sep + "bin"):
+        print(f"Checking {dir}")
         for d in dir:
             if d != TARGET_PLATFORM:
                 print(f"{d} != {TARGET_PLATFORM}, remove it")
