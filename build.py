@@ -61,10 +61,9 @@ elif os.name == "posix":
         shutil.move(local + os.sep + "dist" + os.sep + "run", local)
     for dir in os.listdir(local + os.sep + "bin"):
         print(f"Checking {dir}")
-        for d in dir:
-            if d != TARGET_PLATFORM:
-                print(f"{d} != {TARGET_PLATFORM}, remove it")
-                shutil.rmtree(d + os.sep + d)
+        if dir != TARGET_PLATFORM:
+            print(f"{dir} != {TARGET_PLATFORM}, remove it")
+            shutil.rmtree(local + os.sep + "bin" + os.sep + dir)
 
 for i in os.listdir(local):
     if i not in ZIP_WHITELIST:
