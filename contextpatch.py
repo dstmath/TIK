@@ -4,9 +4,22 @@ import os
 from difflib import SequenceMatcher
 from re import escape
 from typing import Generator
+import logging
+from typing import List, Dict
+
+# 设置日志
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 fix_permission = {
     "system/app/*/.apk": "u:object_r:system_file:s0",
+    "system/app/*/.odex": "u:object_r:system_file:s0",
+    "system/app/*/.vdex": "u:object_r:system_file:s0",
+    "system/priv-app/*/.apk": "u:object_r:system_file:s0",
+    "system/priv-app/*/.odex": "u:object_r:system_file:s0",
+    "system/priv-app/*/.vdex": "u:object_r:system_file:s0",
+    "system/preload/*/.apk": "u:object_r:system_file:s0",
+    "system/preload/*/.odex": "u:object_r:system_file:s0",
+    "system/preload/*/.vdex": "u:object_r:system_file:s0",
     "data-app/.apk": "u:object_r:system_file:s0",
     "android.hardware.wifi": "u:object_r:hal_wifi_default_exec:s0",
     "bin/idmap": "u:object_r:idmap_exec:s0",
@@ -19,23 +32,39 @@ fix_permission = {
 }
 
 
-def scan_context(file) -> dict:  # 读取context文件返回一个字典
+def scan_context(file_path: str) -> Dict[str, List[str]]:
+    """读取context文件并返回一个字典"""
     context = {}
-    with open(file, "r", encoding="utf-8") as file_:
-        for line_number, i in enumerate(file_.readlines(), start=1):
-            if not i.strip():
-                print(f"[Warn] line {line_number} is empty.Skip.")
+    with open(file_path, "r", encoding="utf-8") as f:
+        for line_number, line in enumerate(f, start=1):
+            line = line.strip()
+            # deal with the blank line
+            if not line:
+                logging.warning(f"Line {line_number} is empty. Skipping.")
                 continue
-            filepath, *other = i.strip().split()
-            filepath = filepath.replace(r"\@", "@")
-            context[filepath] = other
-            if len(other) > 1:
-                print(f"[Warn] {i[0]} has too much data.Skip.")
-                del context[filepath]
+
+            # try to split the line into filepath and rule two parts
+            parts = line.split()
+            # too many rules
+            if parts.__len__() > 2:
+                logging.warning(
+                    f"Line {line_number}: {parts[0]} has too many fields. Skipping."
+                )
+                continue
+            # good line
+            elif parts.__len__() == 2:
+                filepath, rule = parts
+                context[filepath.strip()] = rule.strip()
+            # no rule
+            else:
+                logging.warning(
+                    f"Line {line_number}: {parts[0]} has no rule. Skipping."
+                )
+
     return context
 
 
-def scan_dir(folder) -> Generator:  # 读取解包的目录，返回一个字典
+def scan_dir(folder) -> Generator:  # 读取解包的目录
     part_name = os.path.basename(folder)
     allfiles = [
         "/",
@@ -43,6 +72,7 @@ def scan_dir(folder) -> Generator:  # 读取解包的目录，返回一个字典
         f"/{part_name}/lost+found",
         f"/{part_name}",
         f"/{part_name}/",
+        f"/{part_name}/{part_name}",
     ]
     for root, dirs, files in os.walk(folder, topdown=True):
         for dir_ in dirs:
@@ -108,7 +138,7 @@ def context_patch(fs_file, dir_path) -> tuple:  # 接收两个字典对比
                             break
                         else:
                             permission = permission_d
-            if " " in permission:
+            if type(permission) == str and " " in permission:
                 permission = permission.replace(" ", "")
             print(f"ADD [{i} {permission}], May Not Right")
             add_new += 1
@@ -117,10 +147,19 @@ def context_patch(fs_file, dir_path) -> tuple:  # 接收两个字典对比
     return new_fs, add_new
 
 
-def main(dir_path, fs_config) -> None:
+def main(dir_path: str, fs_config: str) -> None:
     new_fs, add_new = context_patch(scan_context(os.path.abspath(fs_config)), dir_path)
     with open(fs_config, "w+", encoding="utf-8", newline="\n") as f:
         f.writelines(
             [i + " " + " ".join(new_fs[i]) + "\n" for i in sorted(new_fs.keys())]
         )
     print("ContextPatcher: Add %d" % add_new + " entries")
+
+
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) != 3:
+        print("Usage: python script.py <directory_path> <fs_config>")
+    else:
+        main(sys.argv[1], sys.argv[2])
