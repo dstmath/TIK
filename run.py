@@ -504,6 +504,9 @@ def plug_parse(js_on):
     return data.gavs, data.value
 
 
+PROJECT_ROOT = LOCALDIR
+
+
 class Tool:
     """
     Free Android Rom Tool
@@ -581,7 +584,6 @@ class Tool:
                     ywarn(f"项目已存在！请更换名称")
                     input("任意按钮继续")
                 os.makedirs(o_path.join(LOCALDIR, project_name, "config"))
-                self.project_name = project_name
                 self.project()
             else:
                 ywarn("  Input error!")
@@ -599,6 +601,8 @@ class Tool:
         elif op_pro.isdigit():
             if op_pro in projects.keys():
                 self.project_name = projects[op_pro]
+                global PROJECT_ROOT
+                PROJECT_ROOT = o_path.join(LOCALDIR, self.project_name)
                 self.project()
             else:
                 ywarn("  Input error!")
@@ -976,7 +980,7 @@ def pack_choo(project):
             op_menu = input("  输出文件格式[1]raw [2]sparse:")
             if op_menu == "2":
                 israw = False
-            imgtype = input("手动打包所有分区格式为：[1]ext4 [2]erofs [3]f2fs:")
+            imgtype = input("  手动打包所有分区格式为：[1]ext4 [2]erofs [3]f2fs:")
             if imgtype == "1":
                 imgtype = "ext"
             elif imgtype == "2":
@@ -1008,7 +1012,9 @@ def pack_choo(project):
                     "dtb",
                     "dtbo",
                 ]:
-                    imgtype = input("手动打包所有分区格式为：[1]ext4 [2]erofs [3]f2fs:")
+                    imgtype = input(
+                        "  手动打包所有分区格式为：[1]ext4 [2]erofs [3]f2fs:"
+                    )
                     if imgtype == "1":
                         imgtype = "ext"
                     elif imgtype == "2":
@@ -1268,19 +1274,21 @@ def pack_img(
 ):
     if json_ is None:
         json_ = {}
-
-    file_contexts = LOCALDIR + os.sep + "config" + os.sep + img_name + "_file_contexts"
-    fs_config = LOCALDIR + os.sep + "config" + os.sep + img_name + "_fs_config"
+    print(f"PROJECT_ROOT:{PROJECT_ROOT}")
+    file_contexts = (
+        PROJECT_ROOT + os.sep + "config" + os.sep + img_name + "_file_contexts"
+    )
+    fs_config = PROJECT_ROOT + os.sep + "config" + os.sep + img_name + "_fs_config"
 
     utc = int(time.time()) if not settings.utcstamp else settings.utcstamp
-    out_img = LOCALDIR + os.sep + "TI_out" + os.sep + img_name + ".img"
+    out_img = PROJECT_ROOT + os.sep + "TI_out" + os.sep + img_name + ".img"
 
-    in_files = LOCALDIR + os.sep + img_name + os.sep
+    in_files = PROJECT_ROOT + os.sep + img_name + os.sep
 
     img_size0 = (
-        int(cat(LOCALDIR + os.sep + "config" + os.sep + img_name + "_size.txt"))
+        int(cat(PROJECT_ROOT + os.sep + "config" + os.sep + img_name + "_size.txt"))
         if os.path.exists(
-            LOCALDIR + os.sep + "config" + os.sep + img_name + "_size.txt"
+            PROJECT_ROOT + os.sep + "config" + os.sep + img_name + "_size.txt"
         )
         else 0
     )
@@ -1289,12 +1297,12 @@ def pack_img(
     if settings.diysize == "" and img_size0 < img_size1:
         ywarn("您设置的size过小,将动态调整size!")
         img_size0 = dirsize(
-            in_files, 1, 3, LOCALDIR + os.sep + "dynamic_partitions_op_list"
+            in_files, 1, 3, PROJECT_ROOT + os.sep + "dynamic_partitions_op_list"
         ).rsize_v
 
     elif settings.diysize == "":
         img_size0 = dirsize(
-            in_files, 1, 3, LOCALDIR + os.sep + "dynamic_partitions_op_list"
+            in_files, 1, 3, PROJECT_ROOT + os.sep + "dynamic_partitions_op_list"
         ).rsize_v
 
     # patch file_contexts and fs_config
@@ -1308,14 +1316,23 @@ def pack_img(
     size = img_size0 / int(settings.BLOCKSIZE)
     size = int(size)
     if img_type == "erofs":
-        call(
+        print(
             rf"mkfs.erofs \
                 -z{settings.erofslim} \
                 -T {utc} \
                 --mount-point=/{img_name} \
                 --fs-config-file={fs_config} \
                 --file-contexts={file_contexts} \
-                --product-out={os.path.dirname(out_img)} \
+                {out_img} \
+                {in_files}"
+        )
+        os.system(
+            rf"{get_binary_path('mkfs.erofs')} \
+                -z{settings.erofslim} \
+                -T {utc} \
+                --mount-point=/{img_name} \
+                --fs-config-file={fs_config} \
+                --file-contexts={file_contexts} \
                 {out_img} \
                 {in_files}"
         )
@@ -1324,16 +1341,16 @@ def pack_img(
         size_f2fs = int(size_f2fs * 1.15) + 1
         with open(out_img, "wb") as f:
             f.truncate(size_f2fs)
-        call(
-            rf"mkfs.f2fs {out_img} \
+        os.system(
+            rf"{get_binary_path('mkfs.f2fs')} {out_img} \
                 -O extra_attr \
                 -O inode_checksum \
                 -O sb_checksum \
                 -O compression \
                 -f"
         )
-        call(
-            rf"sload.f2fs \
+        os.system(
+            rf"{get_binary_path('sload.f2fs')} \
                 -f {in_files} \
                 -C {fs_config} \
                 -s {file_contexts} \
@@ -1343,8 +1360,8 @@ def pack_img(
         )
     else:
         if os.path.exists(file_contexts):
-            call(
-                rf"mke2fs \
+            os.system(
+                rf"{get_binary_path('mke2fs')} \
                     -O ^has_journal \
                     -L {img_name} \
                     -I 256 \
@@ -1355,8 +1372,8 @@ def pack_img(
                     {out_img} \
                     {size}"
             )
-            call(
-                rf"e2fsdroid -e \
+            os.system(
+                rf"{get_binary_path('e2fsdroid')} -e \
                     -T {utc} \
                     -S {file_contexts} \
                     -C {fs_config} \
