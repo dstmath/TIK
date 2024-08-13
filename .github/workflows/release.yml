@@ -1,12 +1,8 @@
-name: "Build Tool"
+name: "Release Tool"
 permissions:
   contents: write
   discussions: write
 on:
-  push:
-    paths:
-      - "build.py"
-  pull_request:
   workflow_dispatch:
 jobs:
   build:
