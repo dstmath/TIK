@@ -1,18 +1,21 @@
 from __future__ import print_function
 
 import os
-import struct
-import subprocess
+import json
 import sys
-from os.path import exists
 from random import randint, choice
-from shutil import move, rmtree
 from threading import Thread
+from log import LOGS, LOGE, ysuc, yecho, ywarn
+from typing import Generator
+from api import cls
+
+from rich.table import Table
+from rich.console import Console
 
 import blockimgdiff
-from os import getcwd
 import platform as plat
 from lpunpack import SparseImage
+from core import Setting
 
 
 DataImage = blockimgdiff.DataImage
@@ -28,45 +31,105 @@ try:
     sys.set_int_max_str_digits(0)
 except AttributeError:
     pass
-elocal = getcwd()
+elocal = os.getcwd()
 platform = plat.machine()
 ostype = plat.system()
 binner = elocal + os.sep + "bin"
 ebinner = binner + os.sep + ostype + os.sep + platform + os.sep
 
 
-def call(exe, kz="Y", out=0, shstate=False, sp=0):
-    cmd = f"{ebinner}{exe}" if kz == "Y" else exe
-    if os.name != "posix":
-        conf = subprocess.CREATE_NO_WINDOW
-    else:
-        if sp == 0:
-            cmd = cmd.split()
-        conf = 0
-    try:
-        ret = subprocess.Popen(
-            cmd,
-            shell=shstate,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            creationflags=conf,
-        )
-        for i in iter(ret.stdout.readline, b""):
-            if out == 0:
-                print(i.decode("utf-8", "ignore").strip())
-    except subprocess.CalledProcessError as e:
-        ret = None
-        ret.wait = print
-        ret.returncode = 1
-        for i in iter(e.stdout.readline, b""):
-            if out == 0:
-                print(i.decode("utf-8", "ignore").strip())
-    ret.wait()
-    return ret.returncode
+class JsonEdit:
+    def __init__(self, j_f):
+        self.file = j_f
+
+    def read(self):
+        if not os.path.exists(self.file):
+            return {}
+        with open(self.file, "r+", encoding="utf-8") as pf:
+            try:
+                return json.loads(pf.read())
+            except (Exception, BaseException):
+                return {}
+
+    def write(self, data):
+        with open(self.file, "w+", encoding="utf-8") as pf:
+            json.dump(data, pf, indent=4)
+
+    def edit(self, name, value):
+        data = self.read()
+        data[name] = value
+        self.write(data)
 
 
-dn = None
+def get_all_file_paths(directory) -> Generator:
+    # 初始化文件路径列表
+    for root, directories, files in os.walk(directory):
+        for filename in files:
+            yield os.path.join(root, filename)
+
+
+def versize(size):
+    size_gb = size / (1024 * 1024 * 1024)
+    closest_half_gb = (int(size_gb * 2) + 1) / 2.0
+    return int(closest_half_gb * 1024 * 1024 * 1024)
+
+
+class SetUtils:
+    def __init__(self, path):
+        self.path = path
+        self.supername = "super"
+        self.brcom = "1"
+        self.banner = "1"
+        self.pack_e2 = "1"
+        self.pack_sparse = "0"
+        self.autoslotsuffixing = ""
+        self.fullsuper = "-F"
+        self.BLOCKSIZE = "4096"
+        self.SBLOCKSIZE = "4096"
+        self.metadatasize = "65536"
+        self.super_group = "qti_dynamic_partitions"
+        self.erofslim = "lz4hc,8"
+        self.utcstamp = "1722470400"
+        self.diysize = ""
+        self.diyimgtype = "1"
+        self.online = "true"
+        self.erofs_old_kernel = "0"
+        self.context = "false"
+        self.version = "5.121"
+
+    def load_set(self):
+        with open(self.path, "r") as ss:
+            data = json.load(ss)
+            [setattr(self, v, data[v]) for v in data]
+
+    def change(self, name, value):
+        with open(self.path, "r") as ss:
+            data = json.load(ss)
+        with open(self.path, "w", encoding="utf-8") as ss:
+            data[name] = value
+            json.dump(data, ss, ensure_ascii=False, indent=4)
+        self.load_set()
+
+
+def error(exception_type, exception, traceback):
+    cls()
+    table = Table()
+    table.add_column(f"[red]ERROR:{exception_type.__name__}[/]", justify="center")
+    table.add_row(f"[yellow]Describe:{exception}")
+    table.add_row(
+        f'[yellow]Lines:{exception.__traceback__.tb_lineno}\tModule:{exception.__traceback__.tb_frame.f_globals["__name__"]}'
+    )
+    table.add_section()
+    table.add_row(
+        f"[blue]Platform:[purple]{plat.machine()}\t[blue]System:[purple]{plat.uname().system} {plat.uname().release}"
+    )
+    table.add_section()
+    table.add_row(f"[green]Report:https://github.com/ColdWindScholar/TIK/issues")
+    Console().print(table)
+    input()
+    sys.exit(1)
+
+
 formats = (
     [b"PK", "zip"],
     [b"OPPOENCRYPT!", "ozip"],
@@ -223,7 +286,7 @@ def v_code(num=6) -> str:
 
 
 def qc(file_) -> None:
-    if not exists(file_):
+    if not os.path.exists(file_):
         return
     with open(file_, "r+", encoding="utf-8", newline="\n") as f:
         data = f.readlines()
