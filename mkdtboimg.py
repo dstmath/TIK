@@ -24,7 +24,7 @@ import zlib
 from array import array
 
 
-class CompressionFormat(object):
+class CompressionFormat:
     """Enum representing DT compression format for a DT entry."""
 
     NO_COMPRESSION = 0x00
@@ -32,7 +32,7 @@ class CompressionFormat(object):
     GZIP_COMPRESSION = 0x02
 
 
-class DtEntry(object):
+class DtEntry:
     """Provides individual DT image file arguments to be added to a DTBO.
 
     Attributes:
@@ -115,7 +115,7 @@ class DtEntry(object):
         missing_keys = set(required_keys) - set(kwargs)
         if missing_keys:
             raise ValueError(
-                "Missing keys in DtEntry constructor: %r" % sorted(missing_keys)
+                f"Missing keys in DtEntry constructor: {sorted(missing_keys)!r}"
             )
 
         self.__dt_file = kwargs["dt_file"]
@@ -133,26 +133,18 @@ class DtEntry(object):
 
     def __str__(self):
         sb = [
-            "{key:>20} = {value:d}".format(key="dt_size", value=self.__dt_size),
-            "{key:>20} = {value:d}".format(key="dt_offset", value=self.__dt_offset),
-            "{key:>20} = {value:08x}".format(key="id", value=self.__id),
-            "{key:>20} = {value:08x}".format(key="rev", value=self.__rev),
+            f'{"dt_size":>20} = {self.__dt_size:d}',
+            f'{"dt_offset":>20} = {self.__dt_offset:d}',
+            f'{"id":>20} = {self.__id:08x}',
+            f'{"rev":>20} = {self.__rev:08x}',
         ]
         if self.__version == 1:
-            sb.append("{key:>20} = {value:08x}".format(key="flags", value=self.__flags))
-        sb.append(
-            "{key:>20} = {value:08x}".format(key="custom[0]", value=self.__custom0)
-        )
-        sb.append(
-            "{key:>20} = {value:08x}".format(key="custom[1]", value=self.__custom1)
-        )
-        sb.append(
-            "{key:>20} = {value:08x}".format(key="custom[2]", value=self.__custom2)
-        )
+            sb.append(f'{"flags":>20} = {self.__flags:08x}')
+        sb.append(f'{"custom[0]":>20} = {self.__custom0:08x}')
+        sb.append(f'{"custom[1]":>20} = {self.__custom1:08x}')
+        sb.append(f'{"custom[2]":>20} = {self.__custom2:08x}')
         if self.__version == 0:
-            sb.append(
-                "{key:>20} = {value:08x}".format(key="custom[3]", value=self.__custom3)
-            )
+            sb.append(f'{"custom[3]":>20} = {self.__custom3:08x}')
         return "\n".join(sb)
 
     def compression_info(self):
@@ -225,7 +217,7 @@ class DtEntry(object):
         return self.__custom3
 
 
-class Dtbo(object):
+class Dtbo:
     """
     Provides parser, reader, writer for dumping and creating Device Tree Blob
     Overlay (DTBO) images.
@@ -350,18 +342,17 @@ class Dtbo(object):
         # verify the header
         if self.magic != self._DTBO_MAGIC and self.magic != self._ACPIO_MAGIC:
             raise ValueError(
-                "Invalid magic number 0x%x in DTBO/ACPIO file" % self.magic
+                f"Invalid magic number 0x{self.magic:x} in DTBO/ACPIO file"
             )
 
         if self.header_size != self._DT_TABLE_HEADER_SIZE:
             raise ValueError(
-                "Invalid header size (%d) in DTBO/ACPIO file" % self.header_size
+                f"Invalid header size ({self.header_size:d}) in DTBO/ACPIO file"
             )
 
         if self.dt_entry_size != self._DT_ENTRY_HEADER_SIZE:
             raise ValueError(
-                "Invalid DT entry header size (%d) in DTBO/ACPIO file"
-                % self.dt_entry_size
+                f"Invalid DT entry header size ({self.dt_entry_size:d}) in DTBO/ACPIO file"
             )
 
     def _read_dt_entries_from_metadata(self):
@@ -378,7 +369,7 @@ class Dtbo(object):
 
         offset = self.dt_entries_offset // 4
         params = {"version": self.version, "dt_file": None}
-        for i in range(0, self.dt_entry_count):
+        for _ in range(0, self.dt_entry_count):
             dt_table_entry = self.__metadata[
                 offset : offset + self._DT_ENTRY_HEADER_INTS
             ]
@@ -412,8 +403,7 @@ class Dtbo(object):
         )
         if file_size < self.__metadata_size:
             raise ValueError(
-                "Invalid or truncated DTBO file of size %d expected %d" % file_size,
-                self.__metadata_size,
+                f"Invalid or truncated DTBO file of size {file_size:d} expected {self.__metadata_size:d}"
             )
 
         num_ints = (
@@ -493,16 +483,12 @@ class Dtbo(object):
         )
         for key in _keys:
             if key == "magic":
-                sb.append(
-                    "{key:>20} = {value:08x}".format(key=key, value=self.__dict__[key])
-                )
+                sb.append(f"{key:>20} = {self.__dict__[key]:08x}")
             else:
-                sb.append(
-                    "{key:>20} = {value:d}".format(key=key, value=self.__dict__[key])
-                )
+                sb.append(f"{key:>20} = {self.__dict__[key]:d}")
         count = 0
         for dt_entry in self.__dt_entries:
-            sb.append("dt_table_entry[{0:d}]:".format(count))
+            sb.append(f"dt_table_entry[{count:d}]:")
             sb.append(str(dt_entry))
             count = count + 1
         return "\n".join(sb)
@@ -536,7 +522,7 @@ class Dtbo(object):
         }
 
         if compression_format not in compression_obj_dict:
-            ValueError("Bad compression format %d" % compression_format)
+            ValueError(f"Bad compression format {compression_format:d}")
 
         if compression_format is CompressionFormat.NO_COMPRESSION:
             dt_entry = dt_entry_file.read()
@@ -611,7 +597,7 @@ class Dtbo(object):
             ValueError: if invalid DT entry index or compression format is detected.
         """
         if idx > self.dt_entry_count:
-            raise ValueError("Invalid index %d of DtEntry" % idx)
+            raise ValueError(f"Invalid index {idx:d} of DtEntry")
 
         size = self.dt_entries[idx].size
         offset = self.dt_entries[idx].dt_offset
@@ -763,20 +749,7 @@ def parse_dt_entries(global_args, arg_list):
     return dt_entries
 
 
-def create_dtbo_image(
-    fout,
-    list,
-    page_size=2048,
-    version=0,
-    dt_type="dtb",
-    id="0",
-    rev="0",
-    flags="0",
-    custom0="0",
-    custom1="0",
-    custom2="0",
-    custom3="0",
-):
+def create_dtbo_image(fout, list, page_size=2048, dt_type="dtb", flags="0"):
     """Create Device Tree Blob Overlay image using provided arguments.
 
     Args:
@@ -786,17 +759,17 @@ def create_dtbo_image(
 
     assert list, "List of dt_images to add to DTBO not provided"
     data = argparse.Namespace(
-        id=id,
-        rev=rev,
+        id="0",
+        rev="0",
         flags=flags,
-        custom0=custom0,
-        custom1=custom1,
-        custom2=custom2,
-        custom3=custom3,
-        version=version,
+        custom0="0",
+        custom1="0",
+        custom2="0",
+        custom3="0",
+        version=0,
     )
     dt_entries = parse_dt_entries(data, list)
-    dtbo = Dtbo(fout, dt_type, page_size, version)
+    dtbo = Dtbo(fout, dt_type, page_size, 0)
     dt_entry_buf = dtbo.add_dt_entries(dt_entries)
     dtbo.commit(dt_entry_buf)
     fout.close()
@@ -817,7 +790,7 @@ def dump_dtbo_image(fin, dtfilename, decompress=False):
     if dtfilename:
         num_entries = len(dtbo.dt_entries)
         for idx in range(0, num_entries):
-            with open(dtfilename + ".{:d}".format(idx), "wb") as fout:
+            with open(dtfilename + f".{idx:d}", "wb") as fout:
                 dtbo.extract_dt_file(idx, fout, decompress)
     print(str(dtbo) + "\n")
 

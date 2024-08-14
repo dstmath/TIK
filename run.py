@@ -28,7 +28,6 @@ import extract_dtb
 import requests
 from rich.progress import track
 import contextpatch
-import downloader
 import fspatch
 import imgextractor
 import lpunpack
@@ -1228,15 +1227,20 @@ def undtbo(project, infile):
             yecho(f"正在反编译{dtbo_files}为{dts_files}")
             dtbofiles = dtbodir + os.sep + "dtbo_files" + os.sep + dtbo_files
             if (
-                call(
-                    f'dtc -@ -I "dtb" -O "dts" {dtbofiles} -o "{dtbodir + os.sep + "dts_files" + os.sep + dts_files}"',
-                    out=1,
+                subprocess.call(
+                    rf'{get_binary_path("dtc")} -@ \
+                        -I "dtb" \
+                        -O "dts" {dtbofiles} \
+                        -o "{dtbodir + os.sep + "dts_files" + os.sep + dts_files}"',
+                    shell=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
                 )
                 != 0
             ):
                 ywarn(f"反编译{dtbo_files}失败！")
     ysuc("完成！")
-    time.sleep(1)
+    rmdire(dtbodir + os.sep + "dtbo_files")
 
 
 def makedtbo(sf, project):
@@ -1249,9 +1253,14 @@ def makedtbo(sf, project):
         new_dtbo_files = dts_files.replace("dts", "dtbo")
         yecho(f"正在回编译{dts_files}为{new_dtbo_files}")
         dtb_ = dtbodir + os.sep + "dts_files" + os.sep + dts_files
-        call(
-            f'dtc -@ -I "dts" -O "dtb" {dtb_} -o {dtbodir + os.sep + "new_dtbo_files" + os.sep + new_dtbo_files}',
-            out=1,
+        subprocess.call(
+            rf'{get_binary_path("dtc")} -@ \
+                -I "dts" \
+                -O "dtb" {dtb_} \
+                -o {dtbodir + os.sep + "new_dtbo_files" + os.sep + new_dtbo_files}',
+            shell=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
     yecho("正在生成dtbo.img...")
     list_ = []
