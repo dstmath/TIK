@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import hashlib
 import json
 import platform as plat
 import re
@@ -1226,12 +1225,20 @@ def undtbo(project, infile):
             dts_files = dtbo_files.replace("dtbo", "dts")
             yecho(f"正在反编译{dtbo_files}为{dts_files}")
             dtbofiles = dtbodir + os.sep + "dtbo_files" + os.sep + dtbo_files
+            command = [
+                get_binary_path("dtc"),
+                "-@",
+                "-I",
+                "dtb",
+                "-O",
+                "dts",
+                dtbofiles,
+                "-o",
+                os.path.join(dtbodir, "dts_files", dts_files),
+            ]
             if (
                 subprocess.call(
-                    rf'{get_binary_path("dtc")} -@ \
-                        -I "dtb" \
-                        -O "dts" {dtbofiles} \
-                        -o "{dtbodir + os.sep + "dts_files" + os.sep + dts_files}"',
+                    command,
                     shell=True,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
@@ -1239,6 +1246,7 @@ def undtbo(project, infile):
                 != 0
             ):
                 ywarn(f"反编译{dtbo_files}失败！")
+                return
     ysuc("完成！")
     rmdire(dtbodir + os.sep + "dtbo_files")
 
@@ -1253,17 +1261,25 @@ def makedtbo(sf, project):
         new_dtbo_files = dts_files.replace("dts", "dtbo")
         yecho(f"正在回编译{dts_files}为{new_dtbo_files}")
         dtb_ = dtbodir + os.sep + "dts_files" + os.sep + dts_files
+        command = [
+            get_binary_path("dtc"),
+            "-@",
+            "-I",
+            "dts",
+            "-O",
+            "dtb",
+            dtb_,
+            "-o",
+            dtbodir + os.sep + "new_dtbo_files" + os.sep + new_dtbo_files,
+        ]
         subprocess.call(
-            rf'{get_binary_path("dtc")} -@ \
-                -I "dts" \
-                -O "dtb" {dtb_} \
-                -o {dtbodir + os.sep + "new_dtbo_files" + os.sep + new_dtbo_files}',
+            command,
             shell=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
     yecho("正在生成dtbo.img...")
-    list_ = []
+    list_: list[str] = []
     for b in os.listdir(dtbodir + os.sep + "new_dtbo_files"):
         if b.startswith("dtbo."):
             list_.append(dtbodir + os.sep + "new_dtbo_files" + os.sep + b)
