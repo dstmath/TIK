@@ -7,7 +7,6 @@ import sys
 from argparse import Namespace
 import banner
 import ext4
-from Magisk import Magisk_patch
 import os
 import contextpatch
 import fspatch
@@ -22,14 +21,14 @@ from rich.progress import track
 from typing import Literal
 
 from api import cls, dir_has, cat, dirsize
-from log import LOGS, LOGE, ysuc, yecho, ywarn
+from log import log_success, log_error, ysuc, yecho, wrap_red
 from utils import gettype, simg2img, versize
 from rich.console import Console
 
 import requests
 from rich.progress import track
 from api import cls, dir_has, cat, dirsize
-from log import LOGS, LOGE, ysuc, yecho, ywarn
+from log import log_success, log_error, ysuc, yecho, wrap_red
 from utils import gettype, simg2img, SetUtils, JsonEdit
 
 LOCALDIR = os.getcwd()
@@ -237,7 +236,7 @@ class Setting:
         elif op_pro in actions.keys():
             actions[op_pro]()
         else:
-            ywarn("Input error!")
+            wrap_red("Input error!")
         self.settings2()
 
     def settings3(self):
@@ -373,21 +372,21 @@ class Tool:
                 if input(f"  确认删除{projects[delete_index]}？[1/0]") == "1":
                     shutil.rmtree(os.path.join(LOCALDIR, projects[delete_index]))
                 else:
-                    ywarn("取消删除")
+                    wrap_red("取消删除")
             else:
-                ywarn("  项目不存在！")
+                wrap_red("  项目不存在！")
                 input("任意按钮继续")
 
         elif op_pro == "0":
             project_name = input("请输入项目名称(非中文)：")
             if project_name:
                 if os.path.exists(os.path.join(LOCALDIR, project_name)):
-                    ywarn(f"项目已存在！请更换名称")
+                    wrap_red(f"项目已存在！请更换名称")
                     input("任意按钮继续")
                 os.makedirs(os.path.join(LOCALDIR, project_name, "config"))
                 self.project()
             else:
-                ywarn("  Input error!")
+                wrap_red("  Input error!")
                 input("任意按钮继续")
 
         elif op_pro == "88":
@@ -406,11 +405,11 @@ class Tool:
                 PROJECT_ROOT = os.path.join(LOCALDIR, self.project_name)
                 self.project()
             else:
-                ywarn("  Input error!")
+                wrap_red("  Input error!")
                 input("任意按钮继续")
 
         else:
-            ywarn("  Input error!")
+            wrap_red("  Input error!")
             input("任意按钮继续")
 
         # back to the main menu
@@ -487,7 +486,7 @@ class Tool:
             sys.exit(0)
 
         else:
-            ywarn("   Input error!")
+            wrap_red("   Input error!")
             input("任意按钮继续")
 
         self.project()
@@ -501,14 +500,14 @@ class Tool:
         cls()
         print(" \033[31m>定制菜单 \033[0m\n")
         print(f"  项目：{self.project_name}\n")
-        print("\033[33m    0> 返回上级  1> 面具修补\033[0m\n")
+        print("\033[33m    0> 返回上级  1> xxxx\033[0m\n")
         print("\033[33m    2> KSU修补   3> Apatch修补\033[0m\n")
         print("\033[33m    4> 去除avb   5> 去除data加密\033[0m\n")
         op_menu = input("    请输入编号: ")
         if op_menu == "0":
             return
         elif op_menu == "1":
-            self.magisk_patch()
+            pass
         elif op_menu == "2":
             self.ksu_patch()
         elif op_menu == "3":
@@ -519,10 +518,10 @@ class Tool:
                     if file.startswith("fstab."):
                         self.dis_avb(os.path.join(root, file))
         elif op_menu == "5":
-            ywarn("暂未支持")
+            wrap_red("暂未支持")
             ...
         else:
-            ywarn("   Input error!")
+            wrap_red("   Input error!")
         input("任意按钮继续")
         self.custom_rom()
 
@@ -570,53 +569,11 @@ class Tool:
             os.chdir(project)
             return
         else:
-            ywarn("Input Error!")
+            wrap_red("Input Error!")
         input("任意按钮继续")
         self.project()
 
     def apatch_patch(self): ...
-
-    def magisk_patch(self):
-        cls()
-        cs = 0
-        project = LOCALDIR + os.sep + self.project_name
-        os.chdir(LOCALDIR)
-        print(" \n\033[31m>面具修补 \033[0m\n")
-        print(f"  项目：{self.project_name}\n")
-        print(f"  请将要修补的镜像放入{project}")
-        boots = {}
-        for i in os.listdir(project):
-            if os.path.isdir(os.path.join(project, i)):
-                continue
-            if gettype(os.path.join(project, i)) in ["boot", "vendor_boot"]:
-                cs += 1
-                boots[str(cs)] = os.path.join(project, i)
-                print(f"  [{cs}]--{i}")
-        print("\033[33m-------------------------------\033[0m")
-        print("\033[33m    [00] 返回\033[0m\n")
-        op_menu = input("    请输入编号: ")
-        if op_menu in boots.keys():
-            mapk = input("    请输入Magisk.apk路径:")
-            if not os.path.isfile(mapk):
-                ywarn("Input Error!")
-            else:
-                patch = Magisk_patch(boots[op_menu], "", MAGISAPK=mapk)
-                patch.auto_patch()
-                if os.path.exists(os.path.join(LOCALDIR, "new-boot.img")):
-                    out = os.path.join(project, "boot_patched.img")
-                    shutil.move(os.path.join(LOCALDIR, "new-boot.img"), out)
-                    LOGS(f"Moved to:{out}")
-                    LOGS("修补完成")
-                else:
-                    LOGE("修补失败")
-        elif op_menu == "00":
-            os.chdir(project)
-            return
-        else:
-            ywarn("Input Error!")
-        input("任意按钮继续")
-        self.magisk_patch()
-        cls()
 
 
 def unpack_choo(project):
@@ -626,7 +583,7 @@ def unpack_choo(project):
     filen = 0
     files = {}
     infos = {}
-    ywarn(f"  请将文件放于{project}根目录下！\n")
+    wrap_red(f"  请将文件放于{project}根目录下！\n")
     print(" [0]- 分解所有文件\n")
 
     if dir_has(project, ".img"):
@@ -637,7 +594,7 @@ def unpack_choo(project):
                     filen += 1
                     info = gettype(os.path.abspath(img0))
                     (
-                        ywarn(f"   [{filen}]- {img0} <UNKNOWN>\n")
+                        wrap_red(f"   [{filen}]- {img0} <UNKNOWN>\n")
                         if info == "unknow"
                         else print(f"   [{filen}]- {img0} <{info.upper()}>\n")
                     )
@@ -681,11 +638,11 @@ def unpack_choo(project):
         (
             unpack(files[int(filed)], infos[int(filed)], project)
             if int(filed) in files.keys()
-            else ywarn("Input error!")
+            else wrap_red("Input error!")
         )
 
     else:
-        ywarn("Input error!")
+        wrap_red("Input error!")
 
     input("任意按钮继续")
     unpack_choo(project)
@@ -807,9 +764,9 @@ def pack_choo(project):
                 else:
                     pack_img(parts[int(filed)], imgtype, israw, json_)
             else:
-                ywarn("Input error!")
+                wrap_red("Input error!")
         else:
-            ywarn("Input error!")
+            wrap_red("Input error!")
         input("任意按钮继续")
         pack_choo(project)
 
@@ -953,7 +910,7 @@ def makedtb(sf, project):
             )
             != 0
         ):
-            ywarn("回编译dtb失败")
+            wrap_red("回编译dtb失败")
     with open(project + os.sep + "TI_out" + os.sep + sf, "wb") as sff:
         for dtb in os.listdir(dtbdir + os.sep + "new_dtb_files"):
             if dtb.endswith(".dtb"):
@@ -1004,7 +961,7 @@ def undtbo(project, infile):
                 )
                 != 0
             ):
-                ywarn(f"反编译{dtbo_files}失败！")
+                wrap_red(f"反编译{dtbo_files}失败！")
                 return
     ysuc("完成！")
     shutil.rmtree(dtbodir + os.sep + "dtbo_files")
@@ -1045,7 +1002,7 @@ def makedtbo(sf, project):
             project + os.sep + os.path.basename(sf).split(".")[0] + ".img", list_, 4096
         )
     except (Exception, BaseException):
-        ywarn(f"{os.path.basename(sf).split('.')[0]}.img生成失败!")
+        wrap_red(f"{os.path.basename(sf).split('.')[0]}.img生成失败!")
     else:
         ysuc(f"{os.path.basename(sf).split('.')[0]}.img生成完毕!")
 
@@ -1076,7 +1033,7 @@ def pack_img(
 
     img_size1 = dirsize(in_files, 1, 1).rsize_v
     if settings.diysize == "" and img_size0 < img_size1:
-        ywarn("您设置的size过小,将动态调整size!")
+        wrap_red("您设置的size过小,将动态调整size!")
         img_size0 = dirsize(
             in_files, 1, 3, PROJECT_ROOT + os.sep + "dynamic_partitions_op_list"
         ).rsize_v
@@ -1163,7 +1120,7 @@ def pack_img(
                     {out_img}"
             )
         else:
-            ywarn("Miss file_contexts")
+            wrap_red("Miss file_contexts")
 
     if not israw:
         os.system(f"img2simg {out_img} {out_img}.s")
@@ -1177,7 +1134,7 @@ def packsuper(project):
     if not os.path.exists(project + os.sep + "super"):
         os.makedirs(project + os.sep + "super")
     cls()
-    ywarn(f"请将需要打包的分区镜像放置于{project}{os.sep}super中！")
+    wrap_red(f"请将需要打包的分区镜像放置于{project}{os.sep}super中！")
     supertype = input("请输入Super类型：[1]A_only [2]AB [3]V-AB-->")
     if supertype == "3":
         supertype = "VAB"
@@ -1313,7 +1270,7 @@ def insuper(imgdir, outputimg, ssize, stype, sparsev, isreadonly):
         superpa += f" --group {settings.super_group}:{supersize} "
     superpa += f"{settings.fullsuper} {settings.autoslotsuffixing} --output {outputimg}"
     (
-        ywarn("创建super.img失败！")
+        wrap_red("创建super.img失败！")
         if os.system(f"lpmake {superpa}") != 0
         else ysuc("成功创建super.img!")
     )
@@ -1386,5 +1343,5 @@ def unpack(file, info, project):
     elif info in ["boot", "vendor_boot"]:
         unpackboot(os.path.abspath(file), project)
     else:
-        ywarn("未知格式！")
+        wrap_red("未知格式！")
     json_.write(parts)
