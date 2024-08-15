@@ -7,17 +7,9 @@ set directory case-sensitive on Windows directly with ctypes
 thus for Windows 10 1903 and up
 """
 
-from ctypes import (
-    WinDLL,
-    c_void_p,
-    get_last_error,
-    WinError,
-    c_int,
-    Structure,
-    sizeof,
-    byref,
-)
-from ctypes.wintypes import HANDLE, LPCSTR, DWORD, BOOL, LPVOID, ULONG
+from ctypes import (Structure, WinDLL, WinError, byref, c_int, c_void_p,
+                    get_last_error, sizeof)
+from ctypes.wintypes import BOOL, DWORD, HANDLE, LPCSTR, LPVOID, ULONG
 
 try:
     from enum import IntEnum

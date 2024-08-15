@@ -1,35 +1,30 @@
 import json
+import os
 import platform
 import re
 import shutil
-import time
+import subprocess
 import sys
+import time
 from argparse import Namespace
+from typing import Literal
+
+import extract_dtb
+import requests
+from rich.console import Console
+from rich.progress import track
+
 import banner
-import ext4
-import os
 import contextpatch
+import ext4
 import fspatch
 import imgextractor
 import lpunpack
 import mkdtboimg
 import utils
-import extract_dtb
-import requests
-import subprocess
-from rich.progress import track
-from typing import Literal
-
-from api import cls, dir_has, cat, dirsize
-from log import log_success, log_error, ysuc, yecho, wrap_red
-from utils import gettype, simg2img, versize
-from rich.console import Console
-
-import requests
-from rich.progress import track
-from api import cls, dir_has, cat, dirsize
-from log import log_success, log_error, ysuc, yecho, wrap_red
-from utils import gettype, simg2img, SetUtils, JsonEdit
+from api import cat, cls, dir_has, dirsize
+from log import *
+from utils import JsonEdit, SetUtils, gettype, simg2img, versize
 
 LOCALDIR = os.getcwd()
 BIN_PATH = os.path.join(LOCALDIR, "bin")

@@ -14,8 +14,8 @@
 
 import bisect
 import os
-import sys
 import struct
+import sys
 from hashlib import sha1
 
 import rangelib

@@ -44,6 +44,3 @@ def print_yellow(info, needTime=True):
 
 def print_green(info, needTime=True):
     print(wrap_green(info, needTime))
-
-
-LOGE("This is an error message")

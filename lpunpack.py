@@ -3,14 +3,14 @@ import copy
 import enum
 import io
 import json
+import os
 import re
 import struct
 import sys
 from dataclasses import dataclass, field
-import os
 from string import Template
-from typing import IO, Dict, List, TypeVar, cast, BinaryIO, Tuple
 from timeit import default_timer as dti
+from typing import IO, BinaryIO, Dict, List, Tuple, TypeVar, cast
 
 SPARSE_HEADER_MAGIC = 0xED26FF3A
 SPARSE_HEADER_SIZE = 28

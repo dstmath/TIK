@@ -4,7 +4,7 @@ import os
 import re
 from difflib import SequenceMatcher
 from re import escape
-from typing import Generator, Dict, List
+from typing import Dict, Generator, List
 
 # 此前的判断 xxx in key似乎没有生效，改用正则表达式来匹配
 fix_permission = {

@@ -1,20 +1,18 @@
 from __future__ import print_function
 
-import os
 import json
+import os
+import platform as plat
 import sys
-from random import randint, choice
+from random import choice, randint
 from threading import Thread
 from typing import Generator
-from api import cls
 
-from rich.table import Table
 from rich.console import Console
+from rich.table import Table
 
-import platform as plat
+from api import cls
 from lpunpack import SparseImage
-
-
 
 try:
     sys.set_int_max_str_digits(0)
