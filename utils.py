@@ -5,28 +5,17 @@ import json
 import sys
 from random import randint, choice
 from threading import Thread
-from log import LOGS, LOGE, ysuc, yecho, ywarn
 from typing import Generator
 from api import cls
 
 from rich.table import Table
 from rich.console import Console
 
-import blockimgdiff
 import platform as plat
 from lpunpack import SparseImage
-from core import Setting
 
 
-DataImage = blockimgdiff.DataImage
-# -----
-# ====================================================
-#          FUNCTION: sdat2img img2sdat
-#       AUTHORS: xpirt - luxi78 - howellzhu
-#          DATE: 2018-10-27 10:33:21 CEST | 2018-05-25 12:19:12 CEST
-# ====================================================
-# -----
-# ----VALUES
+
 try:
     sys.set_int_max_str_digits(0)
 except AttributeError:
