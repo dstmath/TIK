@@ -27,18 +27,18 @@ def cat(file) -> str:
         return f.read().strip()
 
 
-def f_remove(file: str) -> None:
-    """remove the file or directory"""
-    if os.path.exists(file):
-        if os.path.isdir(file):
-            shutil.rmtree(file)
-        elif os.path.isfile(file):
-            os.remove(file)
+def remove_path(path: str) -> None:
+    """Remove the file or directory"""
+    if os.path.exists(path):
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        elif os.path.isfile(path):
+            os.remove(path)
 
 
-def re_folder(path) -> None:
+def recreate_folder(path) -> None:
     """remove the directory and recreate it"""
-    f_remove(path)
+    remove_path(path)
     if not os.path.exists(path):
         os.makedirs(path)
 
