@@ -386,7 +386,7 @@ class Tool:
 
         elif op_pro == "88":
             cls()
-            ysuc("\n感谢使用TI-KITCHEN5,再见！")
+            print_yellow("\n感谢使用TI-KITCHEN5,再见！")
             sys.exit(0)
 
         elif op_pro == "77":
@@ -477,7 +477,7 @@ class Tool:
 
         elif op_menu == "88":
             cls()
-            ysuc("\n感谢使用TI-KITCHEN5,再见！")
+            print_yellow("\n感谢使用TI-KITCHEN5,再见！")
             sys.exit(0)
 
         else:
@@ -487,7 +487,7 @@ class Tool:
         self.project()
 
     def slim_partition(self):
-        yecho("暂未支持")
+        print_red("暂未支持")
         input("任意按钮继续")
         pass
 
@@ -697,7 +697,7 @@ def pack_choo(project):
 
         # pack all images
         if filed == "0":
-            yecho("您的选择是：打包所有镜像")
+            print_yellow("您的选择是：打包所有镜像")
             op_menu = input("  输出文件格式[1]raw [2]sparse:")
             if op_menu == "2":
                 israw = False
@@ -710,7 +710,7 @@ def pack_choo(project):
                 imgtype = "f2fs"
 
             for f in track(parts.keys()):
-                yecho(f"打包{parts[f]}...")
+                print_yellow(f"打包{parts[f]}...")
                 if types[f] == "bootimg":
                     dboot(
                         project + os.sep + parts[f],
@@ -746,7 +746,7 @@ def pack_choo(project):
                     if input("  输出文件格式[1]raw [2]sparse:") == "2":
                         israw = False
 
-                yecho(f"打包{parts[int(filed)]}")
+                print_yellow(f"打包{parts[int(filed)]}")
                 if types[int(filed)] == "bootimg":
                     dboot(
                         project + os.sep + parts[int(filed)],
@@ -871,7 +871,7 @@ def undtb(project, infile):
     extract_dtb.extract_dtb.split(
         Namespace(filename=infile, output_dir=dtbdir + os.sep + "dtb_files", extract=1)
     )
-    yecho("正在反编译dtb...")
+    print_yellow("正在反编译dtb...")
     for i in track(os.listdir(dtbdir + os.sep + "dtb_files")):
         if i.endswith(".dtb"):
             name = i.split(".")[0]
@@ -888,7 +888,7 @@ def undtb(project, infile):
         + os.path.basename(infile).split(".")[0],
         "w",
     ).close()
-    ysuc("反编译完成!")
+    print_green("反编译完成!")
 
 
 def makedtb(sf, project):
@@ -897,7 +897,7 @@ def makedtb(sf, project):
     os.makedirs(dtbdir + os.sep + "new_dtb_files")
     for dts_files in os.listdir(dtbdir + os.sep + "dtb_files"):
         new_dtb_files = dts_files.split(".")[0]
-        yecho(f"正在回编译{dts_files}为{new_dtb_files}.dtb")
+        print_yellow(f"正在回编译{dts_files}为{new_dtb_files}.dtb")
         dtb_ = dtbdir + os.sep + "dtb_files" + os.sep + dts_files
         if (
             os.system(
@@ -911,7 +911,7 @@ def makedtb(sf, project):
             if dtb.endswith(".dtb"):
                 with open(os.path.abspath(dtb), "rb") as f:
                     sff.write(f.read())
-    ysuc("回编译完成！")
+    print_green("回编译完成！")
 
 
 def undtbo(project, infile):
@@ -932,12 +932,12 @@ def undtbo(project, infile):
             os.makedirs(dtbodir + os.sep + "dts_files")
         except (Exception, BaseException):
             ...
-    yecho("正在解压dtbo.img")
+    print_yellow("正在解压dtbo.img")
     mkdtboimg.dump_dtbo(infile, dtbodir + os.sep + "dtbo_files" + os.sep + "dtbo")
     for dtbo_files in os.listdir(dtbodir + os.sep + "dtbo_files"):
         if dtbo_files.startswith("dtbo."):
             dts_files = dtbo_files.replace("dtbo", "dts")
-            yecho(f"正在反编译{dtbo_files}为{dts_files}")
+            print_yellow(f"正在反编译{dtbo_files}为{dts_files}")
             dtbofiles = dtbodir + os.sep + "dtbo_files" + os.sep + dtbo_files
             command = [
                 get_binary_path("dtc"),
@@ -958,19 +958,20 @@ def undtbo(project, infile):
             ):
                 wrap_red(f"反编译{dtbo_files}失败！")
                 return
-    ysuc("完成！")
+    print_green("完成！")
     shutil.rmtree(dtbodir + os.sep + "dtbo_files")
 
 
 def makedtbo(sf, project):
     dtbodir = project + os.sep + os.path.basename(sf).split(".")[0]
-    shutil.rmtree(dtbodir + os.sep + "new_dtbo_files")
+    if os.path.exists(dtbodir + os.sep + "new_dtbo_files"):
+        shutil.rmtree(dtbodir + os.sep + "new_dtbo_files")
     if os.path.exists(project + os.sep + os.path.basename(sf).split(".")[0] + ".img"):
         os.remove(project + os.sep + os.path.basename(sf).split(".")[0] + ".img")
     os.makedirs(dtbodir + os.sep + "new_dtbo_files")
     for dts_files in os.listdir(dtbodir + os.sep + "dts_files"):
         new_dtbo_files = dts_files.replace("dts", "dtbo")
-        yecho(f"正在回编译{dts_files}为{new_dtbo_files}")
+        print_yellow(f"正在回编译{dts_files}为{new_dtbo_files}")
         dtb_ = dtbodir + os.sep + "dts_files" + os.sep + dts_files
         command = [
             get_binary_path("dtc"),
@@ -986,7 +987,7 @@ def makedtbo(sf, project):
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-    yecho("正在生成dtbo.img...")
+    print_yellow("正在生成dtbo.img...")
     list_: list[str] = []
     for b in os.listdir(dtbodir + os.sep + "new_dtbo_files"):
         if b.startswith("dtbo."):
@@ -999,7 +1000,7 @@ def makedtbo(sf, project):
     except (Exception, BaseException):
         wrap_red(f"{os.path.basename(sf).split('.')[0]}.img生成失败!")
     else:
-        ysuc(f"{os.path.basename(sf).split('.')[0]}.img生成完毕!")
+        print_green(f"{os.path.basename(sf).split('.')[0]}.img生成完毕!")
 
 
 def pack_img(
@@ -1182,7 +1183,7 @@ def packsuper(project):
         supersize = tool_auto_size
     else:
         supersize = input("请输入super分区大小（字节数）:")
-    yecho("打包到TI_out/super.img...")
+    print_yellow("打包到TI_out/super.img...")
     insuper(
         project + os.sep + "super",
         project + os.sep + "TI_out" + os.sep + "super.img",
@@ -1267,7 +1268,7 @@ def insuper(imgdir, outputimg, ssize, stype, sparsev, isreadonly):
     (
         wrap_red("创建super.img失败！")
         if os.system(f"lpmake {superpa}") != 0
-        else ysuc("成功创建super.img!")
+        else print_green("成功创建super.img!")
     )
 
 
@@ -1279,7 +1280,7 @@ def unpack(file, info, project):
     parts = json_.read()
     if not os.path.exists(project + os.sep + "config"):
         os.makedirs(project + os.sep + "config")
-    yecho(f"[{info}]解包{os.path.basename(file)}中...")
+    print_yellow(f"[{info}]解包{os.path.basename(file)}中...")
     if info == "sparse":
         simg2img(os.path.join(project, file))
         unpack(file, gettype(file), project)
