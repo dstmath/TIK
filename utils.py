@@ -262,18 +262,6 @@ def generate_dynamic_list(dbfz, size, set_, lb, work):
         data.clear()
 
 
-def v_code(num=6) -> str:
-    ret = ""
-    for i in range(num):
-        num = randint(0, 9)
-        # num = chr(random.randint(48,57))#ASCII表示数字
-        letter = chr(randint(97, 122))  # 取小写字母
-        Letter = chr(randint(65, 90))  # 取大写字母
-        s = str(choice([num, letter, Letter]))
-        ret += s
-    return ret
-
-
 def qc(file_) -> None:
     if not os.path.exists(file_):
         return
@@ -308,25 +296,6 @@ def simg2img(path):
             os.rename(unsparse_file, path)
     except Exception as e:
         print(e)
-
-
-def findfile(file, dir_) -> str | None:
-    for root, dirs, files in os.walk(dir_, topdown=True):
-        if file in files:
-            if os.name == "nt":
-                return (root + os.sep + file).replace("\\", "/")
-            else:
-                return root + os.sep + file
-        else:
-            pass
-
-
-def findfolder(dir__, folder_name):
-    for root, dirnames, filenames in os.walk(dir__):
-        for dirname in dirnames:
-            if dirname == folder_name:
-                return os.path.join(root, dirname).replace("\\", "/")
-    return None
 
 
 # ----CLASSES
