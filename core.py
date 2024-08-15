@@ -27,7 +27,6 @@ from log import *
 from utils import JsonEdit, SetUtils, gettype, simg2img, versize
 
 LOCALDIR = os.getcwd()
-BIN_PATH = os.path.join(LOCALDIR, "bin")
 SETTINGS_PATH = os.path.join(LOCALDIR, "bin", "settings.json")
 settings = SetUtils(SETTINGS_PATH)
 settings.load_set()
@@ -308,8 +307,13 @@ class Tool:
     """
 
     def __init__(self):
+        self.local_dir = os.getcwd()
+        print_yellow(f"TIK根目录：{self.local_dir}")
+
         # current working project
         self.project_name = ""
+        # the absolute path of the project
+        self.project_root = ""
         # skip them when recognize projects
         self.WHITELIST = ["bin", "ksu-derviers", "__pycache__"]
 
@@ -337,22 +341,29 @@ class Tool:
 
     def main(self):
         # change the working directory to the project directory
-        os.chdir(LOCALDIR)
+        os.chdir(self.local_dir)
+
+        # key-value pairs of the projects(number: project_name)
+        project_num = 0
         projects = {}
-        pro = 0
+
+        # clear the screen and show the banner
         cls()
         self.greet()
+
         print(" >\033[33m 项目列表 \033[0m\n")
         print("\033[31m   [00]  删除项目\033[0m\n\n", "  [0]  新建项目\n")
 
         # list all of the projects
-        for pros in os.listdir(LOCALDIR):
-            if pros in self.WHITELIST or pros.startswith("."):
+        for project_dir in os.listdir(self.local_dir):
+            # neglect the directories in the whitelist
+            if project_dir in self.WHITELIST or project_dir.startswith("."):
                 continue
-            if os.path.isdir(os.path.join(LOCALDIR, pros)):
-                pro += 1
-                print(f"   [{pro}]  {pros}\n")
-                projects[str(pro)] = pros
+            # make sure it is a directory
+            if os.path.isdir(os.path.join(self.local_dir, project_dir)):
+                project_num += 1
+                print(f"   [{project_num}]  {project_dir}\n")
+                projects.update({str(project_num): project_dir})
 
         print("  --------------------------------------")
         print("\033[33m  [77] 设置  [88] 退出\033[0m\n")
@@ -367,26 +378,27 @@ class Tool:
                 if input(f"  确认删除{projects[delete_index]}？[1/0]") == "1":
                     shutil.rmtree(os.path.join(LOCALDIR, projects[delete_index]))
                 else:
-                    wrap_red("取消删除")
+                    print_red("取消删除")
             else:
-                wrap_red("  项目不存在！")
+                print_red("  项目不存在！")
                 input("任意按钮继续")
 
         elif op_pro == "0":
-            project_name = input("请输入项目名称(非中文)：")
-            if project_name:
-                if os.path.exists(os.path.join(LOCALDIR, project_name)):
+            new_project_name = input("请输入项目名称(非中文)：")
+            if new_project_name:
+                if os.path.exists(os.path.join(self.local_dir, new_project_name)):
                     wrap_red(f"项目已存在！请更换名称")
                     input("任意按钮继续")
-                os.makedirs(os.path.join(LOCALDIR, project_name, "config"))
-                self.project()
+                os.makedirs(os.path.join(self.local_dir, new_project_name, "config"))
+                os.makedirs(os.path.join(self.local_dir, new_project_name, "TI_out"))
+                print_green(f"项目{new_project_name}创建成功！")
             else:
-                wrap_red("  Input error!")
+                print_red("  Input error!")
                 input("任意按钮继续")
 
         elif op_pro == "88":
             cls()
-            print_yellow("\n感谢使用TI-KITCHEN5,再见！")
+            print_green("\n感谢使用TI-KITCHEN5, 再见！")
             sys.exit(0)
 
         elif op_pro == "77":
@@ -395,16 +407,16 @@ class Tool:
         # enter to the working project
         elif op_pro.isdigit():
             if op_pro in projects.keys():
-                self.project_name = projects[op_pro]
-                global PROJECT_ROOT
-                PROJECT_ROOT = os.path.join(LOCALDIR, self.project_name)
+                # initialize the project
+                self.project_name = projects.get(op_pro, "")
+                self.project_root = os.path.join(self.local_dir, self.project_name)
                 self.project()
             else:
-                wrap_red("  Input error!")
+                print_red("  Input error!")
                 input("任意按钮继续")
 
         else:
-            wrap_red("  Input error!")
+            print_red("  Input error!")
             input("任意按钮继续")
 
         # back to the main menu
@@ -417,18 +429,9 @@ class Tool:
             return
         with open(fstab, "r") as sf:
             details = sf.read()
-        if not re.search(",avb=vbmeta_system", details):
-            # it may be "system /system erofs ro avb=vbmeta_system,..."
-            details = re.sub("avb=vbmeta_system,", "", details)
-        else:
-            details = re.sub(",avb=vbmeta_system", ",", details)
-        if not re.search(",avb", details):
-            # it may be "product /product ext4 ro avb,..."
-            details = re.sub("avb,", "", details)
-        else:
-            details = re.sub(",avb", "", details)
+        details = re.sub("avb=vbmeta_system,", "", details)
+        details = re.sub("avb,", "", details)
         details = re.sub(",avb_keys=.*avbpubkey", "", details)
-        details = re.sub(",avb=vbmeta", "", details)
         with open(fstab, "w") as tf:
             tf.write(details)
 
@@ -436,12 +439,9 @@ class Tool:
     def dis_data_encryption(fstab): ...
 
     def project(self):
-        # the current project directory
-        project_dir = LOCALDIR + os.sep + self.project_name
-
         cls()
         # change the working directory
-        os.chdir(project_dir)
+        os.chdir(self.project_root)
 
         print(" \n\033[31m>项目菜单 \033[0m\n")
         (
@@ -451,33 +451,34 @@ class Tool:
         )
 
         # create the necessary directories if not exists
-        os.makedirs(project_dir + os.sep + "TI_out", exist_ok=True)
+        os.makedirs(self.project_root + os.sep + "TI_out", exist_ok=True)
+        os.makedirs(self.project_root + os.sep + "config", exist_ok=True)
 
-        print("\033[33m    0> 回到主页     2> 解包菜单\033[0m\n")
-        print("\033[33m    3> 打包菜单     4> 定制功能\033[0m\n")
-        print("\033[33m    5> 精简分区     88> 退出\033[0m\n")
+        print("\033[33m    1> 解包菜单     2> 打包菜单\033[0m\n")
+        print("\033[33m    3> 定制功能     4> 精简分区\033[0m\n\n")
+        print("\033[1;32m    00> 返回主页    88> 退出TIK\033[0m\n")
 
         op_menu = input("    请输入编号: ")
 
-        if op_menu == "0":
+        if op_menu == "00":
             self.main()
             return
 
+        elif op_menu == "1":
+            unpack_choo(self.project_root)
+
         elif op_menu == "2":
-            unpack_choo(project_dir)
+            pack_choo(self.project_root)
 
         elif op_menu == "3":
-            pack_choo(project_dir)
-
-        elif op_menu == "4":
             self.custom_rom()
 
-        elif op_menu == "5":
+        elif op_menu == "4":
             self.slim_partition()
 
         elif op_menu == "88":
             cls()
-            print_yellow("\n感谢使用TI-KITCHEN5,再见！")
+            print_green("\n感谢使用TI-KITCHEN5,再见！")
             sys.exit(0)
 
         else:
@@ -523,8 +524,8 @@ class Tool:
     def ksu_patch(self):
         cls()
         cs = 0
-        project = LOCALDIR + os.sep + self.project_name
-        os.chdir(LOCALDIR)
+        project = self.local_dir + os.sep + self.project_name
+        os.chdir(self.local_dir)
         print(" \n\033[31m>ksu修补 \033[0m\n")
         print(f"  项目：{self.project_name}\n")
         print(f"  请将要修补的镜像放入{project}")
@@ -571,19 +572,20 @@ class Tool:
     def apatch_patch(self): ...
 
 
-def unpack_choo(project):
+def unpack_choo(project_dir:str):
+    """解包前端"""
     cls()
-    os.chdir(project)
+    os.chdir(project_dir)
     print(" \033[31m >分解 \033[0m\n")
     filen = 0
     files = {}
     infos = {}
-    wrap_red(f"  请将文件放于{project}根目录下！\n")
+    wrap_red(f"  请将文件放于{project_dir}根目录下！\n")
     print(" [0]- 分解所有文件\n")
 
-    if dir_has(project, ".img"):
+    if dir_has(project_dir, ".img"):
         print("\033[33m [Img]文件\033[0m\n")
-        for img0 in os.listdir(project):
+        for img0 in os.listdir(project_dir):
             if img0.endswith(".img"):
                 if os.path.isfile(os.path.abspath(img0)):
                     filen += 1
@@ -596,9 +598,9 @@ def unpack_choo(project):
                     files[filen] = img0
                     infos[filen] = "img" if info != "sparse" else "sparse"
 
-    if dir_has(project, ".dtb"):
+    if dir_has(project_dir, ".dtb"):
         print("\033[33m [Dtb]文件\033[0m\n")
-        for dtb0 in os.listdir(project):
+        for dtb0 in os.listdir(project_dir):
             if dtb0.endswith(".dtb"):
                 if (
                     os.path.isfile(os.path.abspath(dtb0))
@@ -615,7 +617,7 @@ def unpack_choo(project):
 
     if filed == "0":
         for v in files.keys():
-            unpack(files[v], infos[v], project)
+            unpack(files[v], infos[v], project_dir)
 
     elif filed == "77":
         imgcheck = 0
@@ -624,14 +626,14 @@ def unpack_choo(project):
             if upacall != "1":
                 imgcheck = input(f"  是否解包{files[v]}?[1/0]")
             if upacall == "1" or imgcheck != "0":
-                unpack(files[v], infos[v], project)
+                unpack(files[v], infos[v], project_dir)
 
     elif filed == "00":
         return
 
     elif filed.isdigit():
         (
-            unpack(files[int(filed)], infos[int(filed)], project)
+            unpack(files[int(filed)], infos[int(filed)], project_dir)
             if int(filed) in files.keys()
             else wrap_red("Input error!")
         )
@@ -640,24 +642,25 @@ def unpack_choo(project):
         wrap_red("Input error!")
 
     input("任意按钮继续")
-    unpack_choo(project)
+    unpack_choo(project_dir)
 
 
-def pack_choo(project):
+def pack_choo(project_dir: str):
+    """打包前端"""
     cls()
     print(" \033[31m >打包 \033[0m\n")
     partn = 0
     parts = {}
     types = {}
-    json_ = JsonEdit(project + os.sep + "config" + os.sep + "parts_info").read()
-    if not os.path.exists(project + os.sep + "config"):
-        os.makedirs(project + os.sep + "config")
-    if project:
+    json_ = JsonEdit(project_dir + os.sep + "config" + os.sep + "parts_info").read()
+    if not os.path.exists(project_dir + os.sep + "config"):
+        os.makedirs(project_dir + os.sep + "config")
+    if project_dir:
         print("   [0]- 打包所有镜像\n")
-        for packs in os.listdir(project):
-            if os.path.isdir(project + os.sep + packs):
+        for packs in os.listdir(project_dir):
+            if os.path.isdir(project_dir + os.sep + packs):
                 if os.path.exists(
-                    project + os.sep + "config" + os.sep + packs + "_fs_config"
+                    project_dir + os.sep + "config" + os.sep + packs + "_fs_config"
                 ):
                     partn += 1
                     parts[partn] = packs
@@ -667,20 +670,20 @@ def pack_choo(project):
                         typeo = "ext"
                     types[partn] = typeo
                     print(f"   [{partn}]- {packs} <{typeo}>\n")
-                elif os.path.exists(project + os.sep + packs + os.sep + "comp"):
+                elif os.path.exists(project_dir + os.sep + packs + os.sep + "comp"):
                     partn += 1
                     parts[partn] = packs
                     types[partn] = "bootimg"
                     print(f"   [{partn}]- {packs} <bootimg>\n")
                 elif os.path.exists(
-                    project + os.sep + "config" + os.sep + "dtbinfo_" + packs
+                    project_dir + os.sep + "config" + os.sep + "dtbinfo_" + packs
                 ):
                     partn += 1
                     parts[partn] = packs
                     types[partn] = "dtb"
                     print(f"   [{partn}]- {packs} <dtb>\n")
                 elif os.path.exists(
-                    project + os.sep + "config" + os.sep + "dtboinfo_" + packs
+                    project_dir + os.sep + "config" + os.sep + "dtboinfo_" + packs
                 ):
                     partn += 1
                     parts[partn] = packs
@@ -713,17 +716,17 @@ def pack_choo(project):
                 print_yellow(f"打包{parts[f]}...")
                 if types[f] == "bootimg":
                     dboot(
-                        project + os.sep + parts[f],
-                        project + os.sep + parts[f] + ".img",
+                        project_dir + os.sep + parts[f],
+                        project_dir + os.sep + parts[f] + ".img",
                     )
                 elif types[f] == "dtb":
-                    makedtb(parts[f], project)
+                    makedtb(parts[f], project_dir)
                 elif types[f] == "dtbo":
-                    makedtbo(parts[f], project)
+                    makedtbo(parts[f], project_dir)
                 else:
-                    pack_img(parts[f], imgtype, israw)
+                    pack_img(project_dir, parts[f], imgtype, israw)
         elif filed == "66":
-            packsuper(project)
+            packsuper(project_dir)
         elif filed == "00":
             return
         elif filed.isdigit():
@@ -749,21 +752,21 @@ def pack_choo(project):
                 print_yellow(f"打包{parts[int(filed)]}")
                 if types[int(filed)] == "bootimg":
                     dboot(
-                        project + os.sep + parts[int(filed)],
-                        project + os.sep + parts[int(filed)] + ".img",
+                        project_dir + os.sep + parts[int(filed)],
+                        project_dir + os.sep + parts[int(filed)] + ".img",
                     )
                 elif types[int(filed)] == "dtb":
-                    makedtb(parts[int(filed)], project)
+                    makedtb(parts[int(filed)], project_dir)
                 elif types[int(filed)] == "dtbo":
-                    makedtbo(parts[int(filed)], project)
+                    makedtbo(parts[int(filed)], project_dir)
                 else:
-                    pack_img(parts[int(filed)], imgtype, israw, json_)
+                    pack_img(project_dir, parts[int(filed)], imgtype, israw, json_)
             else:
                 wrap_red("Input error!")
         else:
             wrap_red("Input error!")
         input("任意按钮继续")
-        pack_choo(project)
+        pack_choo(project_dir)
 
 
 def dboot(infile, orig):
@@ -1004,25 +1007,29 @@ def makedtbo(sf, project):
 
 
 def pack_img(
-    img_name, img_type: Literal["ext", "erofs", "f2fs"], israw: bool, json_=None
+    project_dir: str,
+    img_name: str,
+    img_type: Literal["ext", "erofs", "f2fs"],
+    israw: bool,
+    json_=None,
 ):
     if json_ is None:
         json_ = {}
-    print(f"PROJECT_ROOT:{PROJECT_ROOT}")
+    print(f"project_dir:{project_dir}")
     file_contexts = (
-        PROJECT_ROOT + os.sep + "config" + os.sep + img_name + "_file_contexts"
+        project_dir + os.sep + "config" + os.sep + img_name + "_file_contexts"
     )
-    fs_config = PROJECT_ROOT + os.sep + "config" + os.sep + img_name + "_fs_config"
+    fs_config = project_dir + os.sep + "config" + os.sep + img_name + "_fs_config"
 
     utc = int(time.time()) if not settings.utcstamp else settings.utcstamp
-    out_img = PROJECT_ROOT + os.sep + "TI_out" + os.sep + img_name + ".img"
+    out_img = project_dir + os.sep + "TI_out" + os.sep + img_name + ".img"
 
-    in_files = PROJECT_ROOT + os.sep + img_name + os.sep
+    in_files = project_dir + os.sep + img_name + os.sep
 
     img_size0 = (
-        int(cat(PROJECT_ROOT + os.sep + "config" + os.sep + img_name + "_size.txt"))
+        int(cat(project_dir + os.sep + "config" + os.sep + img_name + "_size.txt"))
         if os.path.exists(
-            PROJECT_ROOT + os.sep + "config" + os.sep + img_name + "_size.txt"
+            project_dir + os.sep + "config" + os.sep + img_name + "_size.txt"
         )
         else 0
     )
@@ -1031,12 +1038,12 @@ def pack_img(
     if settings.diysize == "" and img_size0 < img_size1:
         wrap_red("您设置的size过小,将动态调整size!")
         img_size0 = dirsize(
-            in_files, 1, 3, PROJECT_ROOT + os.sep + "dynamic_partitions_op_list"
+            in_files, 1, 3, project_dir + os.sep + "dynamic_partitions_op_list"
         ).rsize_v
 
     elif settings.diysize == "":
         img_size0 = dirsize(
-            in_files, 1, 3, PROJECT_ROOT + os.sep + "dynamic_partitions_op_list"
+            in_files, 1, 3, project_dir + os.sep + "dynamic_partitions_op_list"
         ).rsize_v
 
     # patch file_contexts and fs_config
