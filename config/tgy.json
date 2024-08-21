@@ -1,0 +1,172 @@
+[
+  {
+    "partition": "system",
+    "path": "system/app/HiyaService",
+    "note": "Hiya is TGY FireWall"
+  },
+  {
+    "partition": "system",
+    "path": "system/app/VoiceAccess",
+    "note": ""
+  },
+  {
+    "partition": "system",
+    "path": "system/priv-app/traceur",
+    "note": "Trace your system"
+  },
+  {
+    "partition": "system",
+    "path": "system/priv-app/Rampart",
+    "note": "Rampart is a security service"
+  },
+  {
+    "partition": "system",
+    "path": "system/priv-app/GoogleFeedback",
+    "note": ""
+  },
+  {
+    "partition": "system",
+    "path": "system/priv-app/TaskEdgePanel_v3.2",
+    "note": "Useless edge panel component"
+  },
+  {
+    "partition": "system",
+    "path": "system/app/BixbyWakeup",
+    "note": ""
+  },
+  {
+    "partition": "system",
+    "path": "system/app/MdecService",
+    "note": ""
+  },
+  {
+    "partition": "system",
+    "path": "system/app/VTCameraSetting",
+    "note": ""
+  },
+  {
+    "partition": "system",
+    "path": "system/app/MAPSAgent",
+    "note": "Samsung recommendation service"
+  },
+  {
+    "partition": "system",
+    "path": "system/priv-app/Bixby",
+    "note": ""
+  },
+  {
+    "partition": "system",
+    "path": "system/priv-app/BixbyInterpreter",
+    "note": ""
+  },
+  {
+    "partition": "system",
+    "path": "system/priv-app/BixbyVisionFramework3.5",
+    "note": ""
+  },
+  {
+    "partition": "system",
+    "path": "system/priv-app/FBInstaller_NS",
+    "note": "Facebook installer"
+  },
+  {
+    "partition": "system",
+    "path": "system/priv-app/FBServices",
+    "note": "Facebook services"
+  },
+  {
+    "partition": "system",
+    "path": "system/priv-app/MCFDeviceSync",
+    "note": "Samsung sync"
+  },
+  {
+    "partition": "system",
+    "path": "system/priv-app/RubinVersion34",
+    "note": "personalization service"
+  },
+  {
+    "partition": "system",
+    "path": "system/priv-app/SettingsBixby",
+    "note": ""
+  },
+  {
+    "partition": "system",
+    "path": "system/priv-app/SmartTouchCall",
+    "note": ""
+  },
+  {
+    "partition": "system",
+    "path": "system/priv-app/OMCAgent5",
+    "note": "suggested apps"
+  },
+  {
+    "partition": "system_ext",
+    "path": "priv-app/GoogleFeedback",
+    "note": ""
+  },
+  {
+    "partition": "product",
+    "path": "priv-app/CarrierWifi",
+    "note": ""
+  },
+  {
+    "partition": "product",
+    "path": "priv-app/Turbo",
+    "note": ""
+  },
+  {
+    "partition": "product",
+    "path": "priv-app/Velvet",
+    "note": ""
+  },
+  {
+    "partition": "product",
+    "path": "priv-app/GoogleRestore",
+    "note": ""
+  },
+  {
+    "partition": "product",
+    "path": "app/AssistantShell",
+    "note": ""
+  },
+  {
+    "partition": "product",
+    "path": "app/GoogleCalendarSyncAdapter",
+    "note": ""
+  },
+  {
+    "partition": "product",
+    "path": "app/GoogleLocationHistory",
+    "note": ""
+  },
+  {
+    "partition": "product",
+    "path": "app/SpeechServicesByGoogle",
+    "note": ""
+  },
+  {
+    "partition": "product",
+    "path": "overlay/DisplayCutoutEmulationCorner",
+    "note": ""
+  },
+  {
+    "partition": "product",
+    "path": "overlay/DisplayCutoutEmulationDouble",
+    "note": ""
+  },
+  {
+    "partition": "product",
+    "path": "overlay/DisplayCutoutEmulationHole",
+    "note": ""
+  },
+  {
+    "partition": "product",
+    "path": "overlay/DisplayCutoutEmulationTall",
+    "note": ""
+  },
+  {
+    "partition": "product",
+    "path": "overlay/DisplayCutoutEmulationWaterfall",
+    "note": ""
+  }
+]
