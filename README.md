@@ -1,3 +1,5 @@
+[![GitHub release](https://img.shields.io/github/release/qlenlen/TIK)](https://GitHub.com/qlenlen/TIK/releases/) 
+
 ##  TIK
 ####  **介绍** 
 ***
@@ -6,6 +8,8 @@
 ***
 > [!CAUTION]
 > 免费软件， 未经允许禁止商用 | Free software, unauthorized commercial use prohibited
+
+[Русский](../../tree/ru)
 
 1.  【 **TIK工具箱** 】 ——一个永久开源的ROM工具箱，支持安卓全版本ROM镜像的处理，目前更新到Ver.5；
 
@@ -60,7 +64,7 @@ Note: WSL 可能存在权限出错的问题 请自行判断测试！
 1. Android-(Termux) | ARM64
 2. Windows(7 AND NEWER) | AMD64 X86 ARM64
 3. Linux | ARM64 X86_64
-4. Macos | ARM64 X86_64
+4. Macos | ARM64(by sewzj) X86_64
 ####  **安装教程** 
 
     git clone https://github.com/ColdWindScholar/TIK
@@ -101,6 +105,7 @@ Note: WSL 可能存在权限出错的问题 请自行判断测试！
 ####  **交流反馈** 
 
   QQ群：[932388310](#交流反馈)
+  开发者QQ群：777617022 
 
 ####  **免责声明** 
 

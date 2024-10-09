@@ -1,8 +1,4 @@
-extract-dtb
 pyinstaller
-pycryptodome
 Requests
 rich
-lxml
-zstandard
-protobuf==3.20.1
+extract_dtb

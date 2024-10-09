@@ -14,8 +14,8 @@
 
 import bisect
 import os
-import sys
 import struct
+import sys
 from hashlib import sha1
 
 import rangelib
@@ -24,16 +24,22 @@ import rangelib
 class SparseImage(object):
     """Wraps a sparse image file into an image object.
 
-  Wraps a sparse image file (and optional file map and clobbered_blocks) into
-  an image object suitable for passing to BlockImageDiff. file_map contains
-  the mapping between files and their blocks. clobbered_blocks contains the set
-  of blocks that should be always written to the target regardless of the old
-  contents (i.e. copying instead of patching). clobbered_blocks should be in
-  the form of a string like "0" or "0 1-5 8".
-  """
+    Wraps a sparse image file (and optional file map and clobbered_blocks) into
+    an image object suitable for passing to BlockImageDiff. file_map contains
+    the mapping between files and their blocks. clobbered_blocks contains the set
+    of blocks that should be always written to the target regardless of the old
+    contents (i.e. copying instead of patching). clobbered_blocks should be in
+    the form of a string like "0" or "0 1-5 8".
+    """
 
-    def __init__(self, simg_fn, file_map_fn=None, clobbered_blocks=None,
-                 mode="rb", build_map=True):
+    def __init__(
+        self,
+        simg_fn,
+        file_map_fn=None,
+        clobbered_blocks=None,
+        mode="rb",
+        build_map=True,
+    ):
         self.simg_f = f = open(simg_fn, mode)
 
         header_bin = f.read(28)
@@ -51,17 +57,23 @@ class SparseImage(object):
         if magic != 0xED26FF3A:
             raise ValueError("Magic should be 0xED26FF3A but is 0x%08X" % (magic,))
         if major_version != 1 or minor_version != 0:
-            raise ValueError("I know about version 1.0, but this is version %u.%u" %
-                             (major_version, minor_version))
+            raise ValueError(
+                "I know about version 1.0, but this is version %u.%u"
+                % (major_version, minor_version)
+            )
         if file_hdr_sz != 28:
-            raise ValueError("File header size was expected to be 28, but is %u." %
-                             (file_hdr_sz,))
+            raise ValueError(
+                "File header size was expected to be 28, but is %u." % (file_hdr_sz,)
+            )
         if chunk_hdr_sz != 12:
-            raise ValueError("Chunk header size was expected to be 12, but is %u." %
-                             (chunk_hdr_sz,))
+            raise ValueError(
+                "Chunk header size was expected to be 12, but is %u." % (chunk_hdr_sz,)
+            )
 
-        print("Total of %u %u-byte output blocks in %u input chunks."
-              % (total_blks, blk_sz, total_chunks))
+        print(
+            "Total of %u %u-byte output blocks in %u input chunks."
+            % (total_blks, blk_sz, total_chunks)
+        )
 
         if not build_map:
             return
@@ -82,8 +94,9 @@ class SparseImage(object):
             if chunk_type == 0xCAC1:
                 if data_sz != (chunk_sz * blk_sz):
                     raise ValueError(
-                        "Raw chunk input size (%u) does not match output size (%u)" %
-                        (data_sz, chunk_sz * blk_sz))
+                        "Raw chunk input size (%u) does not match output size (%u)"
+                        % (data_sz, chunk_sz * blk_sz)
+                    )
                 else:
                     care_data.append(pos)
                     care_data.append(pos + chunk_sz)
@@ -100,8 +113,9 @@ class SparseImage(object):
 
             elif chunk_type == 0xCAC3:
                 if data_sz != 0:
-                    raise ValueError("Don't care chunk input size is non-zero (%u)" %
-                                     data_sz)
+                    raise ValueError(
+                        "Don't care chunk input size is non-zero (%u)" % data_sz
+                    )
                 else:
                     pos += chunk_sz
 
@@ -109,8 +123,9 @@ class SparseImage(object):
                 raise ValueError("CRC32 chunks are not supported")
 
             else:
-                raise ValueError("Unknown chunk type 0x%04X not supported" %
-                                 (chunk_type,))
+                raise ValueError(
+                    "Unknown chunk type 0x%04X not supported" % (chunk_type,)
+                )
 
         self.care_map = rangelib.RangeSet(care_data)
         self.offset_index = [i[0] for i in offset_map]
@@ -151,8 +166,8 @@ class SparseImage(object):
     def TotalSha1(self, include_clobbered_blocks=False):
         """Return the SHA-1 hash of all data in the 'care' regions.
 
-    If include_clobbered_blocks is True, it returns the hash including the
-    clobbered_blocks."""
+        If include_clobbered_blocks is True, it returns the hash including the
+        clobbered_blocks."""
         ranges = self.care_map
         if not include_clobbered_blocks:
             ranges = ranges.subtract(self.clobbered_blocks)
@@ -163,13 +178,13 @@ class SparseImage(object):
 
     def _GetRangeData(self, ranges):
         """Generator that produces all the image data in 'ranges'.  The
-    number of individual pieces returned is arbitrary (and in
-    particular is not necessarily equal to the number of ranges in
-    'ranges'.
+        number of individual pieces returned is arbitrary (and in
+        particular is not necessarily equal to the number of ranges in
+        'ranges'.
 
-    This generator is stateful -- it depends on the open file object
-    contained in this SparseImage, so you should not try to run two
-    instances of this generator on the same object simultaneously."""
+        This generator is stateful -- it depends on the open file object
+        contained in this SparseImage, so you should not try to run two
+        instances of this generator on the same object simultaneously."""
 
         f = self.simg_f
         for s, e in ranges:
@@ -228,9 +243,9 @@ class SparseImage(object):
         zero_blocks = []
         nonzero_blocks = []
         if sys.version_info[:2] >= (3, 0):
-            reference = bytes('\0' * self.blocksize, encoding="UTF-8")
+            reference = bytes("\0" * self.blocksize, encoding="UTF-8")
         else:
-            reference = '\0' * self.blocksize
+            reference = "\0" * self.blocksize
 
         # Workaround for bug 23227672. For squashfs, we don't have a system.map. So
         # the whole system image will be treated as a single file. But for some
@@ -285,5 +300,5 @@ class SparseImage(object):
 
     def ResetFileMap(self):
         """Throw away the file map and treat the entire image as
-    undifferentiated data."""
+        undifferentiated data."""
         self.file_map = {"__DATA": self.care_map}

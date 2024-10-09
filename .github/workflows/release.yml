@@ -1,0 +1,80 @@
+name: "Release Tool"
+permissions:
+  contents: write
+  discussions: write
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    needs: [build-win, build-linux]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4.1.8
+      - name: Calculate Release Version
+        id: calculate_version
+        run: |
+          echo "RELEASE_VERSION=$((GITHUB_RUN_NUMBER + 140))" >> $GITHUB_ENV
+      - name: Rename Tool
+        run: |
+          cd TIK-win
+          mv ./TIK-win.zip ../TIK-5-${{ env.RELEASE_VERSION }}-win.zip
+          cd ..
+          cd TIK-linux
+          ls
+          mv ./TIK-linux.zip ../TIK-5-${{ env.RELEASE_VERSION }}-linux.zip
+          cd ..
+      - name: Upload release
+        uses: ncipollo/release-action@v1.14.0
+        with:
+          allowUpdates: true
+          omitBodyDuringUpdate: true
+          removeArtifacts: true
+          name: "TIK-5.${{ env.RELEASE_VERSION }}"
+          tag: "CI_BUILD_${{ env.RELEASE_VERSION }}"
+          body: |
+            Build times: ${{ env.RELEASE_VERSION }}
+            Version: 5
+            Note: When running in linux, you may need do `chmod a+x ./*`
+            Minimum support: Ubuntu 22.04 (64bit); Windows 11 (64bit)
+
+            Русский: https://github.com/randcatcraps/TIK/releases
+          artifacts: "*.zip"
+
+  build-win:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4.1.7
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5.1.1
+        with:
+          python-version: "3.11"
+          architecture: "x64"
+          cache: 'pip'
+      - name: Build tool
+        run: |
+          python build.py
+      - name: Upload Win Build
+        if: success()
+        uses: actions/upload-artifact@v4.3.5
+        with:
+          name: TIK-win
+          path: "./TIK-win.zip"
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4.1.7
+      - name: Set up Python
+        uses: actions/setup-python@v5.1.1
+        with:
+          python-version: "3.11"
+          architecture: "x64"
+          cache: 'pip'
+      - name: Build Tool
+        run: |
+          python3 build.py
+      - name: Upload Linux Build
+        if: success()
+        uses: actions/upload-artifact@v4.3.5
+        with:
+          name: TIK-linux
+          path: "./TIK-linux.zip"
